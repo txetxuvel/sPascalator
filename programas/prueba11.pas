@@ -1,35 +1,27 @@
-  { Comienzo del codigo }
 program prueba11;
 
-const
-   uno=1;
-   dos=2;
-   tres=3;
-   cuatro=4;
-
-var
-  x:integer;
-  exito:boolean;
-  
-
- procedure primero(x,y:integer;var z:integer;var exito:boolean);
-
-var i:integer;
-
-begin
-     i:=x+y;
-     exito:= z = i;
-
+type
+tipoMatriz=array[1..10] of integer;
+tipoRegistro= record
+   campo1:integer;
+   campo2: real;
+   campo3: boolean
 end;
 
+var
+   primera: integer;
+   segunda: real;
+   exito: boolean;
+   matriz:tipoMatriz;
+   registro:tipoRegistro;
 
 begin
 
-   x:=3;
-  primero(uno,dos,x,exito);
-{ x:=6;
-  primero(tres,cuatro,x,exito); }
+   primera:=4;
+   segunda:=3.99;
+   exito:=4<5;
+   exito:=(4<primera) AND (5>4);
+   exito:=(4=6) OR (true AND FALSE) OR (6<>8);
+   registro.campo3:=exito OR (primera>segunda);
 
 end.
-
-{ Fin del codigo }

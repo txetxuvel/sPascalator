@@ -1,52 +1,37 @@
 program prueba12;
 
-const
-   uno=1;
-   dos=2;
-   tres=3;
-   cuatro=4;
-
 var
-  x:integer;
-  exito:boolean;
-  
-
-{ procedure primero(x,y:integer;var z:integer;var exito:boolean);
-
-var i:integer;
-
-begin
-     i:=x+y;
-     exito:= z = i;
-
-end;
-
- procedure segundo(x:integer);
-
-var i:integer;
-
-begin
-     i:=x;
-end;
-
- procedure tercero(var x:integer);
-
-var i:integer;
-
-begin
-     i:=x;
-end; }
+   primera:integer;
+   exito, ok: boolean;
 
 begin
 
-{   x:=3;
-  segundo(7*3+1);
-  tercero(x); 
-  tercero(x+2);} 
-  primero(uno,dos,x,exito);
- x:=6;
-  primero(tres,cuatro,x,exito); }
+   if true then
+      primera:=4;
+   exito:=true;
+
+   if exito then
+      primera:=4;
+
+   if exito then
+      primera:=3
+   else
+      primera:=7;
+
+   if primera>8 then
+      primera:=8
+   else
+      primera:=19;
+
+   if (exito AND (5<>6))
+   THEN BEGIN
+      primera:=6;
+      exito:=false;
+   END
+   ELSE
+      IF exito then begin
+         primera:=primera DIV 2;
+         ok:=false;
+      end
 
 end.
-
-{ Fin del codigo }

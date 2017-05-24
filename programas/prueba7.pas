@@ -1,55 +1,24 @@
 program prueba7;
 
-const
-   N=10;
-   pi=3.14;
-
 type
-   registro=RECORD
-	uno,dos:integer;
-	lleno:boolean
-               END;
+tipoMatriz=array[1..10] of integer;
+tipoRegistro= record
+  campo1:integer;
+  campo2: real;
+  campo3: boolean
+end;
 
-   validos=ARRAY [4..10] OF boolean;
-
-var
-   x,y,z:INTEGER;
-   a,b,c:real;
-   exito,ok:boolean;
-
-   varios:registro;
-
-   val:validos;
+var 
+  primera: integer;
+  matriz: tipoMatriz;
+  registro: tipoRegistro;
 
 begin
 
-   BEGIN
-   x:=2*N;
-   y:=(x*4+4 DIV 2)MOD 5; 
-   a:= - (pi + 4 * 7.0 + 3 MOD (4.5 +y));
-   a:=y;
-   z:=MAXINT - 5;
-   END;
-
-   BEGIN
-   exito:=a > b = x;
-   exito:=x > b = a;
-   ok:=true AND exito;
-   END;
-
-   BEGIN
-   OK:=((a>(b = x))) AND exito;
-   END;
-
-   varios.uno:=4 + 5 * 8 - x ;
-
-   val[4+3*8]:=45>32 =85.64;
-   ok:= val[7*4]>2 = varios.uno;
-
-(* ERRORES *)
-{   varios.uno:=4 > 5 ; }
-{   y:=(3 + 4 * x) MOD 4.5; }
-{   y:=a; }
-{   val[4.4+3*8]:=45>32 =85.64; }
-
+  primera:=45;
+  matriz[2]:=67;
+  matriz[6]:=83;
+  registro.campo3:=true;
+  registro.campo2:=29.87;
+  
 end.

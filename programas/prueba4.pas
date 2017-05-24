@@ -1,8 +1,9 @@
 program prueba4;
 
+var
+   primera,segunda: integer;
+   tercera: real;
+   cuarta: boolean;
 
-'hola'   'hdhdeuhedue cjncoe cjecne ceeoc '   '''hola'''
-''''
 begin
-
 end.

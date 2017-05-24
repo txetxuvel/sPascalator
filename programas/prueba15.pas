@@ -1,33 +1,24 @@
 program prueba15;
+
 const
-   uno=1;
-   dos=2;
-   tres=3;
-   cuatro=4;
+
+   literal='Esto es un literal';
+   N=4;
+   PI=3.141592;
+
 var
-  x:integer;
-  exito:boolean;
-  y:real;
-
-procedure primero(var x: integer; y: integer; z: real; var exito: boolean; ok: boolean);
-
-var m:integer;
-begin
-    M:=45;
-    z:=y+x*m;
-    if ok then
-       exito:=false
-    else
-       exito:=true;
-
-end;
+   primera:integer;
+   segunda: real;
+   tercera:boolean;
 
 begin
 
- x:=3;
-IF (x=3) THEN
-    x:=7 + dos
-ELSE
-    x:=(45+5)*tres;
+   read(primera);
+   read(segunda);
+   write(primera);
+   write(segunda);
+   write(literal);
+   write(N);
+   write(PI)
 
 end.

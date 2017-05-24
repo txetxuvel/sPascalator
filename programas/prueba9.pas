@@ -1,33 +1,48 @@
-Inicprogram prueba9;
+program prueba9;
 
 const
-   uno=1;
-   dos=2;
-   tres=3;
-   cuatro=4;
+
+   N=5;
+   N2=N*N;
+   FACTOR1=0.8;
+   FACTOR2=FACTOR1+N2;
+
+type
+tipoMatriz=array[1..10] of integer;
+tipoRegistro= record
+   campo1:integer;
+   campo2: real;
+   campo3: boolean
+end;
 
 var
-  x:integer;
+   primera, segunda, tercera: integer;
+   cuarta, quinta, sexta: real;
+   exito, ok: boolean;
+   matriz, matriz2: tipoMatriz;
+   registro, registro2: tipoRegistro;
 
 begin
 
-{ if dos > cuatro then
-x:=25; }
+   primera:=3+4;
+   segunda:=primera;
+   segunda:=45*6+primera;
+   tercera:=primera*segunda MOD 3;
 
- if uno>dos then
-  x:=uno
-else
-    x:=dos; 
-{
-if uno>dos then
-  x:=uno
-else
-   if tres>dos then
-      x:=tres
-   else
-    x:=dos; 
+   cuarta:=3.0+4.0;
+   cuarta:=3.65-segunda+cuarta;
+   quinta:=45 DIV cuarta;
 
-if dos > tres then
-    x:=35; }
+   exito:=true;
+   ok:=exito;
 
+   registro.campo1:=primera-2;
+   registro.campo2:=registro.campo1;
+   matriz[1]:=4;
+   matriz[registro.campo1]:=matriz[1] + primera + 4;
+
+   registro:=registro2;
+   matriz2:=matriz;
+
+   
 end.

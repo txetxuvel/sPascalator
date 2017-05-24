@@ -1,20 +1,17 @@
 program prueba6;
 
-const
-   pi=3.14;
+type
+tipoMatriz=array[1..10] of integer;
+tipoRegistro= record
+   campo1:integer;
+   campo2: real;
+   campo3: boolean
+end;
 
-var
-   x,y,z:INTEGER;
-   a,b,c:real;
-   exito,ok:boolean;
+var 
+  primera: integer;
+  matriz: tipoMatriz;
+  registro: tipoRegistro;
 
 begin
-
-   x:=4;
-   a:=1.0;
-   b:= 3;
-   c:=3 + 4.5 + 4.5 + 6;
-   c:=4.5+3;
-
-
 end.
