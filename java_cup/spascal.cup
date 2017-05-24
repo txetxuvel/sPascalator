@@ -1,0 +1,2454 @@
+package compilador;
+
+import java_cup.runtime.*;
+import user.Log;
+import java.util.ArrayList;
+import java.util.HashMap;
+import interprete.JMPascalVM;
+
+action code {:
+
+	private TablaSimbolos tabla = null; 
+	private Log log= null;
+	private HashMap hash = null;
+	private Generador generador = null;
+	
+	private String separador = System.getProperty("line.separator");
+	private ArrayList colaInstrucciones = null;
+	
+	public int queAnalizo=-1; // Marca si lo que se está analizando es un registro para no meter los campos como variables
+	public static final int REGISTRO = 0 ;
+	public static final int PARAMETROS = 1 ;
+	public static final int VARIABLES = 2 ;
+	public static final int LLAMADA = 3 ;
+	
+	public boolean valorDevuelto = true; /**** Luego debe ser false ***/
+	
+	public void inicializa(TablaSimbolos tabla, Log log, String fileName){
+		this.tabla = tabla;
+		this.log = log;
+		hash = new HashMap();
+		generador = new Generador(fileName);
+		colaInstrucciones = new ArrayList();
+	}
+					   
+	public String generaCargaDir(ObjetoVariable objeto){
+  	  String cadena = null;
+	// System.out.println("queAnalizo = " + queAnalizo);
+	  if (queAnalizo != LLAMADA){
+	     if (objeto.getNivel()==tabla.getGlobal())
+	        generador.gCDirGlobal(objeto.getDireccion());
+	     else if (objeto.getNivel()==tabla.getActivo())
+	  	         generador.gCDirLocal(objeto.getDireccion());
+		      else
+			     generador.gCDirInterm(objeto.getDireccion(),2);
+	     try{
+	        ObjetoParametro parametro = (ObjetoParametro) objeto;
+	        if (parametro.isReferencia()){
+	           generador.gCIndValor(JMPascalVM.TAMDIR);
+	        }
+	     }catch(ClassCastException cce){
+//	        System.out.println("Hay una excepción de no parámetro");
+	     }
+	  }
+	  else{
+        if (objeto.getNivel()==tabla.getGlobal()){
+  	       cadena = "CDIRGLOBAL " + objeto.getDireccion();
+  	    }
+        else{
+           if (objeto.getNivel()==tabla.getActivo()){
+	  	      cadena="CDIRLOCAL " + objeto.getDireccion();
+	  	   }
+	       else{
+	  	      cadena="CDIRINTERM " + objeto.getDireccion();
+	  	   }
+		   try{
+              ObjetoParametro parametro = (ObjetoParametro) objeto;
+	  	      if (parametro.isReferencia()){
+                 cadena +=separador + "\nCINDVALOR " + JMPascalVM.TAMDIR;
+              }
+           }catch(ClassCastException e){
+           }
+	  	}
+	  }
+      return cadena;
+	}		
+
+	public String generaCargaDirArray(ObjetoVariable objeto){
+  	  String cadena = null;
+	// System.out.println("queAnalizo = " + queAnalizo);
+
+	  ObjetoTipoTabla tipo = (ObjetoTipoTabla) objeto.getTipo();
+	  if (queAnalizo != LLAMADA){
+	  	 if (objeto.getNivel()==tabla.getGlobal())
+	        generador.gCDirGlobal(objeto.getDireccion());
+	     else if (objeto.getNivel()==tabla.getActivo())
+	  	         generador.gCDirLocal(objeto.getDireccion());
+		      else
+			     generador.gCDirInterm(objeto.getDireccion(),2);
+	     try{
+	        ObjetoParametro parametro = (ObjetoParametro) objeto;
+	        if (parametro.isReferencia()){
+	           generador.gCIndValor(JMPascalVM.TAMDIR);
+	        }
+	     }catch(ClassCastException cce){
+//	        System.out.println("Hay una excepción de no parámetro");
+	     }
+	     generador.gDElemento(tipo.getInicio(),tipo.getTipo().getSize());
+	  }
+	  else{
+	     if (objeto.getNivel()==tabla.getGlobal())
+    	    cadena = "CDIRGLOBAL " + objeto.getDireccion();
+	     else{
+	       if (objeto.getNivel()==tabla.getActivo())
+	  	      cadena = "CDIRLOCAL " + objeto.getDireccion();
+//	  	      cadena = "CDIRLOCAL " + parametro.getDireccion();
+		   else
+		      cadena = "CDIRINTERM " + objeto.getDireccion();
+//		      cadena = "CDIRINTERM " + parametro.getDireccion();
+		   try{
+              ObjetoParametro parametro = (ObjetoParametro) objeto;
+	  	      if (parametro.isReferencia()){
+                 cadena +=separador + "CINDVALOR " + JMPascalVM.TAMDIR;
+              }
+           }catch(ClassCastException e){
+           }
+		 }
+	     cadena+=separador + "DELEMENTO " + tipo.getInicio()  + " " + tipo.getTipo().getSize();
+	  }
+      return cadena;
+	}		
+
+	public String generaCargaDirRegistro(ObjetoVariable objeto, ObjetoCampo campo){
+	  String cadena = null;
+	// System.out.println("queAnalizo = " + queAnalizo);
+	
+	  if (queAnalizo != LLAMADA){
+	     if (objeto.getNivel()==tabla.getGlobal())
+	             generador.gCDirGlobal(objeto.getDireccion());
+	     else if (objeto.getNivel()==tabla.getActivo())
+	  	         generador.gCDirLocal(objeto.getDireccion());
+		      else
+			     generador.gCDirInterm(objeto.getDireccion(),2);
+	     try{
+	        ObjetoParametro parametro = (ObjetoParametro) objeto;
+	        if (parametro.isReferencia()){
+	           generador.gCIndValor(JMPascalVM.TAMDIR);
+	        }
+	     }catch(ClassCastException cce){
+//	        System.out.println("Hay una excepción de no parámetro");
+	     }
+	  	 generador.gDCampo(campo.getDireccion());
+	  }
+	  else{
+	     if (objeto.getNivel()==tabla.getGlobal())
+  	        cadena = "CDIRGLOBAL " + objeto.getDireccion();
+	     else{
+	        if (objeto.getNivel()==tabla.getActivo())
+	  	       cadena = "CDIRLOCAL " + objeto.getDireccion();
+		    else
+		  	   cadena = "CDIRINTERM " + objeto.getDireccion();
+		  	try{
+               ObjetoParametro parametro = (ObjetoParametro) objeto;
+	  	       if (parametro.isReferencia()){
+                  cadena +=separador + "CINDVALOR " + JMPascalVM.TAMDIR;
+               }
+            }catch(ClassCastException e){
+            }
+		 }
+	     cadena+=separador + "DCAMPO " + campo.getDireccion();
+	  }
+      return cadena;
+	}		
+
+:};
+
+parser code {:
+
+	public TablaSimbolos tabla = null; 
+	public Log log= null;
+	
+	private String fileName = null;
+	
+	public Parser (TablaSimbolos tabla, Log log, String fileName){
+		this();
+		this.tabla = tabla;
+		this.log = log;
+		this.fileName = fileName;
+	}
+
+	public void syntax_error(Symbol tokenActual){
+//	   System.out.println("syntax");
+       log.anadirLog("\nError sintáctico: <token= "
+                + tokenActual.sym + ", texto=\""
+				+ (String) tokenActual.value + "\"> <fila= "
+				+ tokenActual.left + ", columna= "
+				+ tokenActual.right
+				+ ">........ Intentando recuperarse..... ");
+	}
+
+	public void unrecovered_syntax_error(Symbol tokenActual) throws ErrorSintacticoException{
+//	    System.out.println("syntax_fatal");
+	    String cadena="<token= "
+                + tokenActual.sym + ", texto=\""
+				+ (String) tokenActual.value + "\"> <fila= "
+				+ tokenActual.left + ", columna= "
+				+ tokenActual.right
+				+ ">.... Irrecuperable => Traducción Abortada";
+        throw new ErrorSintacticoException(cadena);
+	}
+	
+	public void report_fatal_error(String msg, Object info) throws ErrorSintacticoException{
+//	    System.out.println("report fatal");
+	    Symbol tokenActual = (Symbol) info;
+	    String cadena="<token= "
+                + tokenActual.sym + ", texto=\""
+				+ (String) tokenActual.value + "\"> <fila= "
+				+ tokenActual.left + ", columna= "
+				+ tokenActual.right
+				+ ">.... Irrecuperable => Traducción Abortada";
+        throw new ErrorSintacticoException(cadena);
+	}
+	
+	public void report_error(String msg, Object info){
+//	   System.out.println("report");
+	   Symbol tokenActual = (Symbol) info;
+       log.anadirLog("\nError sintáctico: <token= "
+                + tokenActual.sym + ", texto=\""
+				+ (String) tokenActual.value + "\"> <fila= "
+				+ tokenActual.left + ", columna= "
+				+ tokenActual.right
+				+ ">........ Intentando recuperarse..... ");
+	}
+
+:};
+
+init with {:
+
+	action_obj.inicializa(tabla, log, fileName);
+	
+:};
+
+terminal prAND, prARRAY, prBEGIN, prCONST, prDIV, prDO, prDOWNTO,
+  prELSE, prEND, prFOR, prFUNCTION, prIF, prMOD, prNOT, prOF,
+  prOR, prPROCEDURE, prPROGRAM, prRECORD, prREPEAT, prTHEN, prTO, prTYPE,
+  prUNTIL, prVAR, prWHILE, sSUBRANGO, 
+  sASIGNACION, sCORAPER, sCORCIE, sCOMA, sDISTINTO, sDOSPUNTOS,
+  sIGUAL, sMAS, sMAYOR, sMAYORIGU, sMENOR, sMENORIGU, sMENOS,
+  sPARAPER, sPARCIE, sPOR, sPUNTO, sPUNTOCOMA ;
+  
+terminal String pID, pCADENA;
+
+terminal Integer pCteEntera;
+
+terminal Float pCteReal;
+
+non terminal asignLlamada, bloque, bucle,
+  bucleFOR, bucleREPEAT, bucleWHILE, condicional, constante, constantes,
+  declaracion, defCte, defFuncion, defProc, defSubpr, defTipo,
+  defVar, direccion, grupoSent, listasVar, 
+  program, sentencia, sentencias, tipo, tipos, restoIF ;
+
+non terminal String defSubrango ;
+
+non terminal Character  opRel, opAdt, opMult, signo ;
+
+non terminal AnalisisExp expresion, exprSimple, termino, factor;
+
+non terminal AnalisisAsignacion restoAsign;
+
+non terminal AnalisisExpCte expCte, expLiteral, expresionCte,
+  exprSimpleCte, factorCte, terminoCte ;
+  
+non terminal AnalisisSelector selector, restoNombre ;
+    
+non terminal ArrayList listaID, listaCampos, listaVar, parametros,
+  listaParam, listasParam, paramLlamada;
+  
+non terminal ObjetoTipo espTipo ;
+non terminal ObjetoTipoEnumerado tipoEnum ;
+non terminal ObjetoTipoRegistro tipoReg ;
+non terminal ObjetoTipoTabla tipoTab ;
+
+precedence left sMAS, sMENOS, prOR;
+precedence left sPOR, prDIV, prMOD, prAND;
+precedence left sIGUAL, sMAYORIGU, sMAYOR, sMENOR, sMENORIGU, sDISTINTO ;
+
+start with program;
+
+program 		::= prPROGRAM pID:id 
+						{:
+							this.tabla.creaGlobal();
+							this.tabla.insertaPredefinido("integer",new ObjetoTipoPredefinido("integer", "Valores enteros",JMPascalVM.TAMENTERO));
+							this.tabla.insertaPredefinido("real",new ObjetoTipoPredefinido("real", "Valores reales",JMPascalVM.TAMREAL));
+							this.tabla.insertaPredefinido("boolean",new ObjetoTipoPredefinido("boolean", "Valores lógicos",JMPascalVM.TAMLOGICA));
+							this.tabla.insertaPredefinido("string",new ObjetoTipoPredefinido("string", "Cadena",JMPascalVM.TAMDIR));
+							this.tabla.insertaPredefinido("true",new ObjetoCteLogica("true",true)); /**** En caso de que se cambie por reales hay que cambiarlo ***/
+							this.tabla.insertaPredefinido("false",new ObjetoCteLogica("false",false)); /**** En caso de que se cambie por reales hay que cambiarlo ***/
+							this.tabla.insertaPredefinido("maxint",new ObjetoCteEntera("maxint",65536)); 
+							this.tabla.insertaPredefinido("read",new ObjetoProcPredefinido("read")); 
+							this.tabla.insertaPredefinido("write",new ObjetoProcPredefinido("write")); 
+							ObjetoPrograma programa = new ObjetoPrograma(id.toLowerCase(),this.tabla.actualizaNumSubpr());
+							this.tabla.insertar(id.toLowerCase(),programa);
+							this.tabla.setPrograma(programa);
+						:}
+					sPUNTOCOMA bloque sPUNTO 
+						{:
+							this.tabla.suprimirNivel();
+							this.generador.termina();
+						:}
+				  ;
+
+bloque			::= declaracion 
+						{:
+							this.generador.gEtqSubpr(this.tabla.getNumSubprActual());
+							if (this.tabla.getActivo() == this.tabla.getGlobal()){
+								this.generador.gTamGlobal(this.tabla.getTamEspacio());
+								this.generador.gTamFuncion(0); // De momento no se contemplan las funciones
+							}
+							else{
+								this.generador.gReservaEsp(this.tabla.getTamEspacioLocal());
+							}
+						:}
+					grupoSent ;
+
+declaracion		::= defCte defTipo defVar defSubpr ;
+
+defCte			::= prCONST constantes
+				  | /* épsilon */
+				  ;
+constantes		::= constantes constante sPUNTOCOMA
+				  | constante sPUNTOCOMA
+				  ;
+constante		::= pID:id sIGUAL expCte:exp 
+						{:
+							if (this.tabla.buscarLocal(id.toLowerCase())==null){
+								switch (exp.getTipoValor()){
+									case AnalisisExpCte.ENTERA:
+										this.tabla.insertar(id.toLowerCase(), new ObjetoCteEntera(id, new Integer(exp.getValor()).intValue()));
+										break;
+									case AnalisisExpCte.LOGICA:
+										this.tabla.insertar(id.toLowerCase(), new ObjetoCteLogica(id, new Boolean(exp.getValor()).booleanValue()));
+										break;
+									case AnalisisExpCte.REAL:
+										this.tabla.insertar(id.toLowerCase(), new ObjetoCteReal(id, new Float(exp.getValor()).floatValue()));
+										break;
+									case AnalisisExpCte.LITERAL:
+									    int numCadena =  this.tabla.actualizaNumCadena(); //LITERAL
+//NOLITERAL										this.tabla.insertar(id.toLowerCase(), new ObjetoCteLiteral(id, exp.getValor(), this.tabla.actualizaNumCadena()));
+										this.tabla.insertar(id.toLowerCase(), new ObjetoCteLiteral(id, exp.getValor(), numCadena)); //LITERAL
+//NOLITERAL										this.generador.gDefLiteral(exp.getValor());
+										this.generador.gDefLiteral(exp.getValor(),numCadena); //LITERAL
+										break;
+								}
+							}
+							else{
+								throw new ErrorSemanticoException("Identificador repetido: " +
+									id + " (Línea: " + idleft + " Columna: " + idright + ")");
+							}
+						:}
+				  ;
+expCte			::= expLiteral:exp
+						{:
+							RESULT = exp;
+						:}
+				  | expresionCte:exp
+						{:
+							RESULT = exp;
+						:}
+				  ;
+expLiteral		::= pCADENA:cadena
+						{:
+							RESULT = new AnalisisExpCte(AnalisisExpCte.LITERAL,cadena);
+						:}
+				  ;
+expresionCte	::= expresionCte:exp1 opRel:op exprSimpleCte:exp2
+						{:
+							// Se tiene en cuenta que true > false
+								float expr1, expr2 ; 
+								
+								if (exp1.getTipoValor() != exp2.getTipoValor())
+									if (exp1.getTipoValor() == AnalisisExpCte.LOGICA || exp2.getTipoValor() == AnalisisExpCte.LOGICA)
+											throw new ErrorSemanticoException ("Error de tipos en expresión (Línea: " +
+												opleft + " Columna: " +
+												opright + ")");
+								if (exp1.getTipoValor() == AnalisisExpCte.LOGICA){
+									if (new Boolean(exp1.getValor()).booleanValue())
+										expr1 = (float) 1.0;
+									else
+										expr1 = (float) 0.0;
+									if (new Boolean(exp2.getValor()).booleanValue())
+										expr2 = (float) 1.0;
+									else
+										expr2 = (float) 0.0;
+								}
+								else{
+									expr1 = (float) new Float(exp1.getValor()).floatValue();
+									expr2 = (float) new Float(exp2.getValor()).floatValue();
+								}
+								exp1.setTipoValor(AnalisisExpCte.LOGICA);
+								switch(op.charValue()){
+									case '=':
+										exp1.setValor(String.valueOf(expr1 == expr2));
+										break;
+									case '!':
+										exp1.setValor(String.valueOf(expr1 != expr2));
+										break;
+									case '>':
+										exp1.setValor(String.valueOf(expr1 > expr2));
+										break;
+									case '<':
+										exp1.setValor(String.valueOf(expr1 < expr2));
+										break;
+									case 'M':
+										exp1.setValor(String.valueOf(expr1 >= expr2));
+										break;
+									case 'm':
+										exp1.setValor(String.valueOf(expr1 <= expr2));
+										break;
+								}
+								RESULT = exp1;
+						:}
+				  | exprSimpleCte:exp
+				  		{:
+				  			RESULT = exp;
+				  		:}
+				  ;
+exprSimpleCte	::= exprSimpleCte:exp1 opAdt:op terminoCte:exp2
+						{:
+								int factor = 1;
+								switch(op.charValue()){
+									case '-':
+										factor = -1;
+									case '+':
+										if ((exp1.getTipoValor()!=AnalisisExpCte.ENTERA && exp1.getTipoValor()!=AnalisisExpCte.REAL) || (exp2.getTipoValor()!=AnalisisExpCte.ENTERA && exp2.getTipoValor()!=AnalisisExpCte.REAL))
+											throw new ErrorSemanticoException ("Error de tipos en expresión (Línea: " +
+															opleft + " Columna: " +
+															opright + ")");
+										else
+											if (exp1.getTipoValor()==AnalisisExpCte.REAL || exp2.getTipoValor()==AnalisisExpCte.REAL){
+												exp1.setTipoValor(AnalisisExpCte.REAL);
+												exp1.setValor(String.valueOf(new Float(exp1.getValor()).floatValue() + (factor * new Float(exp2.getValor()).floatValue())));
+											}
+											else
+												exp1.setValor(String.valueOf(new Integer(exp1.getValor()).intValue() + (factor * new Integer(exp2.getValor()).intValue())));
+										break;
+									case '|':
+										if (exp1.getTipoValor()!=AnalisisExpCte.LOGICA || exp2.getTipoValor()!=AnalisisExpCte.LOGICA)
+											throw new ErrorSemanticoException ("Error de tipos en expresión (Línea: " +
+															opleft + " Columna: " +
+															opright + ")");
+										else
+											exp1.setValor(String.valueOf(new Boolean(exp1.getValor()).booleanValue() || new Boolean(exp2.getValor()).booleanValue()));
+										break;
+								}
+								RESULT = exp1;
+						:}
+				  | signo:s terminoCte:exp
+				  		{:
+				  			if (s!=null)
+								switch (exp.getTipoValor()){
+									case AnalisisExpCte.ENTERA:
+										exp.setValor(String.valueOf(new Integer(exp.getValor()).intValue() * -1));	
+										break;
+									case AnalisisExpCte.REAL:
+										exp.setValor(String.valueOf(new Float(exp.getValor()).floatValue() * -1.0));	
+										break;
+								}
+							RESULT = exp;
+						:}
+				  | terminoCte:exp
+				  		{:
+							RESULT = exp;
+						:}
+				  ;
+terminoCte 		::= terminoCte:exp1 opMult:op factorCte:exp2
+						{:
+								switch(op.charValue()){
+									case '*':
+										if ((exp1.getTipoValor()!=AnalisisExpCte.ENTERA && exp1.getTipoValor()!=AnalisisExpCte.REAL) || (exp2.getTipoValor()!=AnalisisExpCte.ENTERA && exp2.getTipoValor()!=AnalisisExpCte.REAL))
+											throw new ErrorSemanticoException ("Error de tipos en expresión (Línea: " +
+															opleft + " Columna: " +
+															opright + ")");
+										else
+											if (exp1.getTipoValor()==AnalisisExpCte.REAL || exp2.getTipoValor()==AnalisisExpCte.REAL){
+												exp1.setTipoValor(AnalisisExpCte.REAL);
+												exp1.setValor(String.valueOf(new Float(exp1.getValor()).floatValue() * (new Float(exp2.getValor()).floatValue())));
+											}
+											else
+												exp1.setValor(String.valueOf(new Integer(exp1.getValor()).intValue() * (new Integer(exp2.getValor()).intValue())));
+										break;
+									case '/':
+										if ((exp1.getTipoValor()!=AnalisisExpCte.ENTERA && exp1.getTipoValor()!=AnalisisExpCte.REAL) || (exp2.getTipoValor()!=AnalisisExpCte.ENTERA && exp2.getTipoValor()!=AnalisisExpCte.REAL))
+											throw new ErrorSemanticoException ("Error de tipos en expresión (Línea: " +
+															opleft + " Columna: " +
+															opright + ")");
+										else
+											if (exp1.getTipoValor()==AnalisisExpCte.REAL || exp2.getTipoValor()==AnalisisExpCte.REAL){
+												exp1.setTipoValor(AnalisisExpCte.REAL);
+												exp1.setValor(String.valueOf(new Float(exp1.getValor()).floatValue() / (new Float(exp2.getValor()).floatValue())));
+											}
+											else
+												exp1.setValor(String.valueOf(new Integer(exp1.getValor()).intValue() / (new Integer(exp2.getValor()).intValue())));
+										break;
+									case '%':
+										if ((exp1.getTipoValor()!=AnalisisExpCte.ENTERA && exp1.getTipoValor()!=AnalisisExpCte.REAL) || (exp2.getTipoValor()!=AnalisisExpCte.ENTERA && exp2.getTipoValor()!=AnalisisExpCte.REAL))
+											throw new ErrorSemanticoException ("Error de tipos en expresión (Línea: " +
+															opleft + " Columna: " +
+															opright + ")");
+										else
+											if (exp1.getTipoValor()==AnalisisExpCte.REAL || exp2.getTipoValor()==AnalisisExpCte.REAL){
+												exp1.setTipoValor(AnalisisExpCte.REAL);
+												exp1.setValor(String.valueOf(new Float(exp1.getValor()).floatValue() % (new Float(exp2.getValor()).floatValue())));
+											}
+											else
+												exp1.setValor(String.valueOf(new Integer(exp1.getValor()).intValue() % (new Integer(exp2.getValor()).intValue())));
+										break;
+									case '&':
+										if (exp1.getTipoValor()!=AnalisisExpCte.LOGICA || exp2.getTipoValor()!=AnalisisExpCte.LOGICA)
+											throw new ErrorSemanticoException ("Error de tipos en expresión (Línea: " +
+															opleft + " Columna: " +
+															opright + ")");
+										else
+											exp1.setValor(String.valueOf(new Boolean(exp1.getValor()).booleanValue() && new Boolean(exp2.getValor()).booleanValue()));
+										break;
+								}
+								RESULT = exp1;
+						:}
+				  | factorCte:f
+				  		{:
+				  			RESULT = f;
+				  		:}
+				  ;
+factorCte		::= pCteEntera:cte
+						{:
+							RESULT = new AnalisisExpCte(AnalisisExpCte.ENTERA,String.valueOf(cte.intValue()));
+						:}
+				  | pCteReal:cte
+						{:
+							RESULT = new AnalisisExpCte(AnalisisExpCte.REAL,String.valueOf((float)cte.floatValue()));
+						:}
+				  | pID:id
+				  		{:
+				  			ObjetoCte constante = null;
+				  			try{
+				  				if ((constante=(ObjetoCte)this.tabla.buscarGlobal(id.toLowerCase()))==null)
+				  					throw new ErrorSemanticoException("El identificador " +
+				  						id + " no está declarado (Línea: "+
+				  						idleft + " Columna: " + idright + ")");
+				  				else{
+				  				    try{
+			  						   ObjetoCteEntera constanteTip = (ObjetoCteEntera) constante ;
+			  						   RESULT = new AnalisisExpCte(AnalisisExpCte.ENTERA,String.valueOf(constanteTip.getValor()));
+									}catch(ClassCastException e1){
+									   try{
+					  						ObjetoCteReal constanteTip = (ObjetoCteReal) constante ;
+					  						RESULT = new AnalisisExpCte(AnalisisExpCte.REAL,String.valueOf(constanteTip.getValor()));
+										}catch(ClassCastException e2){
+										    try{
+						  						ObjetoCteLogica constanteTip = (ObjetoCteLogica) constante ;
+						  						RESULT = new AnalisisExpCte(AnalisisExpCte.LOGICA,String.valueOf(constanteTip.getValor()));
+											}catch(ClassCastException e3){
+											    try{
+							  					   ObjetoCteLiteral constanteTip = (ObjetoCteLiteral) constante ;
+							  					   RESULT = new AnalisisExpCte(AnalisisExpCte.LITERAL,String.valueOf(constanteTip.getValor()));
+												}catch(Exception e4){
+				  									throw new ErrorSemanticoException("La constante " +
+				  										id + " no es de un tipo válido (Línea: "+
+				  										idleft + " Columna: " + idright + ")");
+												}
+											}
+										}
+									}
+								}
+				  			}catch(ClassCastException e){
+				  				throw new ErrorSemanticoException ("El identificador "+
+				  						"no se corresponde con una constante (Línea: "+
+				  						idleft + " Columna: " + idright + ")");
+				  			}
+				  		:}
+				  | prNOT factorCte:f
+				  		{:
+				  			if (f.getValor().equals("true"))
+				  				f.setValor("false");
+				  			else
+				  				f.setValor("true");
+				  			RESULT = f;
+				  		:}
+				  | sPARAPER expresionCte:exp sPARCIE
+				  		{:
+				  			RESULT = exp;
+				  		:}
+				  ;
+				  
+				  
+
+defTipo			::= prTYPE tipos
+				  | /* épsilon */
+				  ;
+tipos			::= tipos tipo sPUNTOCOMA
+				  | tipo sPUNTOCOMA  
+				  ;
+tipo			::= pID:id sIGUAL espTipo:tipo 
+				  		{:
+				  			if (this.tabla.buscarLocal(id.toLowerCase())==null){
+				  				tipo.setNombre(id.toLowerCase());
+				  				this.tabla.insertar(id.toLowerCase(), tipo);
+				  			}
+				  			else
+				  				throw new ErrorSemanticoException("El identificador del tipo está duplicado (Línea: "+ idleft +" Columna: " +idright + ")");
+				  		:}
+				  ;
+espTipo			::= tipoEnum:tipo
+						{:
+							RESULT = tipo;
+						:}
+				  | tipoTab:tipo
+						{:
+							RESULT = tipo;
+						:}
+				  | tipoReg:tipo
+						{:
+							RESULT = tipo;
+						:}
+				  ;
+tipoEnum		::= sPARAPER listaID:lista sPARCIE
+						{:
+							RESULT = new ObjetoTipoEnumerado(lista);
+							for(int i=0; i<lista.size(); i++){
+							    /***** Comprobar que en la lista vienen con LowerCase ****/
+								this.tabla.insertar((String) lista.get(i), new ObjetoEtiquetaEnumerado((String) lista.get(i),RESULT,i+1));
+							}
+						:}
+				  ;
+tipoTab			::= prARRAY sCORAPER defSubrango:rango sCORCIE prOF pID:id 
+						{:
+							ObjetoTipoPredefinido tipo = null;
+							try{
+								if ((tipo = (ObjetoTipoPredefinido) this.tabla.buscarGlobal(id.toLowerCase()))==null)
+									throw new ErrorSemanticoException("El tipo "+
+										id+" no ha sido definido (Línea: "+
+										idleft + " Columna: "  + idright +
+										")");
+								else{
+									int inicio = new Integer(rango.substring(0,rango.indexOf(':'))).intValue();
+									int fin = new Integer(rango.substring(rango.indexOf(':')+1)).intValue();
+									RESULT = new ObjetoTipoTabla(inicio, fin, tipo);
+								}
+							}catch (ClassCastException e){
+									throw new ErrorSemanticoException("El identificador "+
+										id+" no es un tipo predefinido (Línea: "+
+										idleft + " Columna: "  + idright +
+										")");
+							}
+						:}
+				  ;
+defSubrango		::= //pCteEntera:inicio sSUBRANGO pCteEntera:fin
+					exprSimpleCte:inicio sSUBRANGO:s exprSimpleCte:fin
+						{:
+							if (inicio.getTipoValor()!=AnalisisExpCte.ENTERA || fin.getTipoValor()!=AnalisisExpCte.ENTERA)
+							   throw new ErrorSemanticoException("Los delimitadores de unsubrango deben ser valores"+
+							   		" constantes enteros (Línea: " + sleft + 
+							   		" Columna: " + sright + ")");
+							else
+								RESULT = new String(inicio.getValor() + ":" + fin.getValor());
+						:}
+				  | pID:id
+				  		{:
+				  			ObjetoTipoEnumerado tipo = null;
+							try{
+								if ((tipo = (ObjetoTipoEnumerado) this.tabla.buscarGlobal(id.toLowerCase()))==null)
+									throw new ErrorSemanticoException("El tipo enumerado "+
+										id+" no ha sido definido (Línea: "+
+										idleft + " Columna: "  + idright +
+										")");
+								else
+									RESULT = new String("1:" + tipo.getTamanio());
+							}catch (ClassCastException e){
+									throw new ErrorSemanticoException("El identificador "+
+										id+" no es un tipo enumerado (Línea: "+
+										idleft + " Columna: "  + idright +
+										")");
+							} 
+				  		:}
+				  ;
+tipoReg			::= 	{:
+							this.queAnalizo = REGISTRO ;
+						:}
+					prRECORD listaCampos:lista prEND 
+						{:
+							ObjetoTipoRegistro registro = new ObjetoTipoRegistro();
+							for (int i=0,direccion=0; i<lista.size(); i++){
+								ArrayList listaVar = (ArrayList) lista.get(i);
+								/**** Comprobar si sería bueno incluir constantes para diferenciar tipo e ID's ****/
+								ObjetoTipo tipo = (ObjetoTipo)listaVar.get(0);
+								ArrayList listaID = (ArrayList) listaVar.get(1);
+								for (int j=0; j<listaID.size(); j++){
+									/***** Comprobar que en la lista vienen con LowerCase ****/
+									if (registro.insertaCampo(new ObjetoCampo((String) listaID.get(j), tipo,direccion,this.tabla.getActivo())))
+									   direccion+=tipo.getSize();
+									else
+									   throw new ErrorSemanticoException("Identificador repetido en los campos del registro: " +
+										  (String) listaID.get(j) + " (Línea: " + listaleft + " Columna: " + listaright + ")");
+									   
+								}
+							}
+							RESULT = registro;
+						:}
+				  ;
+listaCampos		::= listaCampos:total sPUNTOCOMA listaVar:lista
+						{:
+							total.add(lista);
+							RESULT = total;
+						:}
+				  | listaVar:lista
+				  		{:
+				  			RESULT = new ArrayList();
+				  			RESULT.add(lista);
+				  		:}
+				  ;
+
+defVar			::= 	{:
+							this.queAnalizo = VARIABLES ;
+						:}
+					prVAR listasVar
+				  | /* épsilon */
+				  ;
+listasVar		::= listasVar listaVar sPUNTOCOMA
+				  | listaVar sPUNTOCOMA
+				  ;
+
+defSubpr		::= defSubpr defFuncion sPUNTOCOMA
+				  | defSubpr defProc sPUNTOCOMA
+				  | /* épsilon */
+				  ;
+
+defFuncion		::= prFUNCTION pID:id parametros:param sDOSPUNTOS pID:tipo sPUNTOCOMA
+						{:
+							if (this.tabla.buscarLocal(id.toLowerCase())==null){
+								try{
+									ObjetoTipo t = (ObjetoTipo) this.tabla.buscarGlobal(tipo);
+									if (t!=null){
+										//**** Faltan muchas cosas como control de que sea un tipo e inserción de número de subpr
+										// this.tabla.insertar(id.toLowerCase(),new ObjetoFuncion(id, param, t));
+										this.tabla.creaNivel();
+									}
+									else
+										throw new ErrorSemanticoException("El tipo: " + 
+											tipo + " no está declarado (Línea: " + tipoleft +
+											" Columna: " +  tiporight + ")");
+									
+								}catch (ClassCastException e){
+									throw new ErrorSemanticoException("El identificador "+
+										tipo + " no es un tipo (Línea: "+
+										tipoleft + " Columna: "  + tiporight +
+										")");
+								}
+							}
+							else
+								throw new ErrorSemanticoException("El identificador: " + 
+									id + " está duplicado (Línea: " + idleft +
+									" Columna: " +  idright + ")");
+						:}
+					bloque 
+						{:
+							if (this.valorDevuelto)
+								this.tabla.suprimirNivel();
+//*****Luego poner en marcha								valorDevuelto = false;
+							else
+								throw new ErrorSemanticoException("La función "+
+									id + " no devuelve ningún valor (Línea: "+
+									idleft + " Columna: "+ idright + ")");
+						:}
+				  ;
+
+defProc			::= prPROCEDURE pID:id
+						{:
+							if (this.tabla.buscarLocal(id.toLowerCase())==null){
+								ObjetoProc proc=new ObjetoProc(id, this.tabla.actualizaNumSubpr(), this.tabla.getNivAnidamiento());
+								this.tabla.setNivAnidamiento(this.tabla.getNivAnidamiento() + 1);
+								this.tabla.insertar(id.toLowerCase(),proc);
+								this.tabla.creaNivel();
+								RESULT=proc;
+							}
+							else
+								throw new ErrorSemanticoException("El identificador: " + 
+									id + " está duplicado (Línea: " + idleft +
+									" Columna: " +  idright + ")");
+						:}
+					parametros:param sPUNTOCOMA
+						{:
+							ObjetoProc proc = (ObjetoProc) this.tabla.buscarGlobal(id.toLowerCase());
+							proc.setParametros(param);
+						:}
+					bloque 
+						{:
+							// Devolver la memoria
+							this.generador.gDevolucion(this.tabla.getTamEspacio());
+							this.tabla.setNivAnidamiento(this.tabla.getNivAnidamiento()-1);
+							this.tabla.suprimirNivel();
+						:}
+				  ;
+parametros		::= 	{:
+							this.queAnalizo = PARAMETROS ;
+						:}
+					sPARAPER listasParam:lista sPARCIE
+						{:
+							// ObjetoTipoRegistro registro = new ObjetoTipoRegistro();
+							RESULT = new ArrayList();
+							int contador = 0;
+							for (int i=0; i<lista.size();i++){
+								ArrayList listaParametros = (ArrayList) lista.get(i);
+								/**** Comprobar si sería bueno incluir constantes para diferenciar tipo e ID's ****/
+								ObjetoTipo tipo = (ObjetoTipo)listaParametros.get(0);
+								ArrayList listaID = (ArrayList) listaParametros.get(1);
+								Boolean referencia = (Boolean) listaParametros.get(2);
+								for (int j=0; j<listaID.size(); j++)
+							       if (referencia.booleanValue())
+									   contador+=JMPascalVM.TAMDIR;
+								   else
+									   contador+=tipo.getSize();
+							}
+							
+							if (this.tabla.getNivAnidamiento() > 1){
+								this.tabla.setTamEspacio(JMPascalVM.TAMDIR + contador); // Se añade el Enlace Estático
+								contador+=(JMPascalVM.TAMDIR * 3); // Enlace Dinámico, Dirección de Retorno y Enlace Estático
+							}
+							else{
+								this.tabla.setTamEspacio(contador);								
+								contador+=(JMPascalVM.TAMDIR * 2); // Enlace Dinámico y Dirección de Retorno
+							}
+							this.tabla.setDireccion(contador);
+							for (int i=0; i<lista.size(); i++){
+								ArrayList listaParametros = (ArrayList) lista.get(i);
+								/**** Comprobar si sería bueno incluir constantes para diferenciar tipo e ID's ****/
+								ObjetoTipo tipo = (ObjetoTipo)listaParametros.get(0);
+								ArrayList listaID = (ArrayList) listaParametros.get(1);
+								Boolean referencia = (Boolean) listaParametros.get(2);
+								for (int j=0; j<listaID.size(); j++){
+									Objeto parametro = null;
+									if (referencia.booleanValue()){
+									    parametro = new ObjetoParametro((String) listaID.get(j), tipo,this.tabla.getDireccion()-JMPascalVM.TAMDIR,referencia.booleanValue(),this.tabla.getActivo());
+										this.tabla.setDireccion(this.tabla.getDireccion()-JMPascalVM.TAMDIR);
+									}
+									else{
+									    parametro = new ObjetoParametro((String) listaID.get(j), tipo,this.tabla.getDireccion()-tipo.getSize(),referencia.booleanValue(),this.tabla.getActivo());
+										this.tabla.setDireccion(this.tabla.getDireccion()-tipo.getSize());
+									}
+//									this.tabla.setDireccion(this.tabla.getDireccion()+tipo.getSize());
+									/***** Comprobar que en la lista vienen con LowerCase ****/
+									this.tabla.insertar((String) listaID.get(j), parametro);
+									RESULT.add(parametro);
+								}
+							}
+							this.tabla.setDireccion(JMPascalVM.TAMDIR * -1); // En la dirección 0 siempre está el enlace dinámico
+						:}
+				  | /* épsilon */
+				  		{:
+				  			RESULT = null;
+				  		:}
+				  ;
+listasParam		::= listasParam:total sPUNTOCOMA listaParam:lista
+						{:
+							total.add(lista);
+							RESULT = total;
+						:}
+				  | listaParam:lista
+				  		{:
+				  			RESULT = new ArrayList();
+				  			RESULT.add(lista);
+				  		:}
+				  ;
+listaParam		::= prVAR listaVar:lista
+				  		{:
+							lista.add(2,new Boolean(true));
+				  			RESULT = lista;
+				  		:}
+				  | listaVar:lista
+				  		{:
+							lista.add(2,new Boolean(false));
+							RESULT = lista;
+				  		:}
+				  ;
+				  
+listaVar		::= listaID:lista sDOSPUNTOS pID:elTipo 
+						{:	
+							ObjetoTipo tipo = null;
+							try{
+						   		tipo = (ObjetoTipo) this.tabla.buscarGlobal(elTipo.toLowerCase());
+								if (tipo != null)
+									switch (this.queAnalizo){
+										case REGISTRO:
+										case PARAMETROS:
+											RESULT = new ArrayList(2);
+											RESULT.add(0,tipo);
+											RESULT.add(1,lista);
+											break;
+										case VARIABLES:
+											for(int i=0;i<lista.size();i++){
+												/***** Comprobar que en la lista vienen con LowerCase ****/
+										   		if (this.tabla.getActivo() == this.tabla.getGlobal()){
+										   		   this.tabla.insertar((String)lista.get(i),new ObjetoVariable((String)lista.get(i), tipo,this.tabla.getDireccion(),this.tabla.getActivo()));
+												   this.tabla.setDireccion(this.tabla.getDireccion()+tipo.getSize());
+											       this.tabla.setTamEspacio(this.tabla.getTamEspacio()+tipo.getSize());
+											    }
+												else{
+										   		   this.tabla.insertar((String)lista.get(i),new ObjetoVariable((String)lista.get(i), tipo,this.tabla.getDireccion()-tipo.getSize()+1,this.tabla.getActivo()));
+												   this.tabla.setDireccion(this.tabla.getDireccion()-tipo.getSize());
+											       this.tabla.setTamEspacioLocal(this.tabla.getTamEspacioLocal()+tipo.getSize());
+												}
+										   	}
+									}
+								else
+									throw new ErrorSemanticoException("El tipo " + 
+										elTipo + " no está declarado (Línea: " +
+										elTipoleft + " columna: " + elTiporight + ")");
+							}catch (ClassCastException e){
+					    		throw new ErrorSemanticoException(elTipo +
+					    			" no es un tipo declarado (Línea: " + 
+					    			elTipoleft + " Columna: " + elTiporight + ")");
+							}
+						:}
+				  ;
+listaID			::= listaID:lista sCOMA pID:id
+						{:	
+							if (this.tabla.getPrograma().getNombre().equals(id.toLowerCase()))
+								throw new ErrorSemanticoException("No se puede redefinir" +
+										" el nombre del programa (Línea: " +
+										idleft + " columna " + idright + ")");
+							else
+								if (lista.contains(id.toLowerCase()) || this.tabla.buscarLocal(id.toLowerCase())!=null){
+									throw new ErrorSemanticoException("Identificador \""+
+											id +"\" repetido en línea: " + idleft +
+											" columna " + idright);
+								}
+								else{
+									// this.log.anadirLog("\nAñado por recursividad");
+									lista.add(id.toLowerCase());
+									RESULT = lista;
+								}
+						:}
+				  | pID:id
+				  		{:
+							if (this.tabla.getPrograma().getNombre().equals(id.toLowerCase()))
+								throw new ErrorSemanticoException("No se puede redefinir" +
+										" el nombre del programa (Línea: " +
+										idleft + " columna " + idright + ")");
+							else
+								if (this.tabla.buscarLocal(id.toLowerCase())!=null)
+									throw new ErrorSemanticoException("Identificador \""+
+							               id +"\" repetido en línea: " + idleft +
+							               " columna " + idright);
+								else{
+								   // this.log.anadirLog("\nAñado por la final");
+								   RESULT = new ArrayList();
+						  		   RESULT.add(id.toLowerCase());
+						  		}
+				  		:}
+				  ;
+				  
+grupoSent		::= prBEGIN sentencias prEND ;
+
+sentencias		::= sentencias sPUNTOCOMA sentencia
+				  | sentencia
+				  ;
+sentencia		::= condicional
+				  | asignLlamada
+				  | bucle
+				  | grupoSent
+				  | /* épsilon */
+				  ;
+
+condicional		::= prIF expresion:exp prTHEN
+						{:
+							this.generador.gBifCond(this.tabla.actualizaNumCondicional());
+						:} 
+					sentencia
+ 						{:
+							this.generador.gBifIncond(this.tabla.actualizaNumIncondicional());
+				  			this.generador.gEtqCondicional(this.tabla.getNumCondicionalActual());
+						:}
+					restoIF
+				  ;
+restoIF			::= prELSE sentencia
+ 						{:
+				  			this.generador.gEtqCondicional(this.tabla.getNumIncondicionalActual());
+						:}
+				  | /* epsilon */
+ 						{:
+				  			this.generador.gEtqCondicional(this.tabla.getNumIncondicionalActual());
+						:}
+				  ;
+ 
+asignLlamada	::= pID:id restoAsign:asign
+						{:
+							if (asign.getTipo() == AnalisisAsignacion.ASIGNACION){
+								/* Se trata de una asignación */
+								try{
+									// Si se añaden la funciones también se puede tratar del identificador de una función
+									ObjetoVariable objeto = (ObjetoVariable) this.tabla.buscarGlobal(id.toLowerCase());
+									if (objeto == null){
+										throw new ErrorSemanticoException("La variable \""+
+							            	id +"\" no ha sido declarada (Línea: " + idleft +
+							               	" columna " + idright + ")");
+									}
+									else{
+										/* Comprobar tipos */;
+										AnalisisSelector selector = asign.getSelector();
+										if (selector==null){
+											// Se trata de una variable normal{
+											// Tenemos en la cima de la pila la expresión asignada => Comprobar tipos y asignar
+											try{
+//												ObjetoTipoPredefinido tipo = (ObjetoTipoPredefinido) objeto.getTipo();
+												ObjetoTipo tipo = (ObjetoTipo) objeto.getTipo();
+												// Comprobación de tipos se pueden asignar:
+												//	* Valores enteros a variables de tipo INTEGER y REAL
+												//  * Valores reales a variables de tipo REAL
+												//  * Valores lógicos a variables lógicas // **** A reales y enteros decido que no????
+												switch(this.tabla.compruebaTipo(asign.getTipoExp())){
+													case TablaSimbolos.ENTERA:
+														if (tipo==this.tabla.getInteger()){
+														  // *** Generar la asignación entera
+														  this.generaCargaDir(objeto);
+														  this.generador.gAIndValor(JMPascalVM.TAMENTERO);
+														}
+														else if (tipo==this.tabla.getReal()){
+																 this.generador.gAReal(0);
+																 this.generaCargaDir(objeto);
+																 this.generador.gAIndValor(JMPascalVM.TAMREAL);
+															 }
+															  else
+																 throw new ErrorSemanticoException("No coinciden los tipos en la asgnación de " +
+																		id + " (Línea: "+ idleft + " Columna: " + idright + ")");
+														break;
+													case TablaSimbolos.REAL:
+														if (tipo== this.tabla.getReal()){
+															// *** Generar asignación real
+															this.generaCargaDir(objeto);
+															this.generador.gAIndValor(JMPascalVM.TAMREAL);
+														}
+														else
+															throw new ErrorSemanticoException("No coinciden los tipos en la asignación de " +
+																id + " (Línea: "+ idleft + " Columna: " + idright + ")");
+														break;
+													case TablaSimbolos.LOGICA:
+														if (tipo== this.tabla.getBoolean()){
+															/**** Si al final los lógicos son reales hay que cambiarlo ****/
+															this.generaCargaDir(objeto);
+															this.generador.gAIndValor(JMPascalVM.TAMLOGICA); 
+														}
+														else
+															throw new ErrorSemanticoException("No coinciden los tipos en la asgnación de " +
+																id + " (Línea: "+ idleft + " Columna: " + idright + ")");
+														break;
+													case TablaSimbolos.NOPRIMITVO:
+//****INICIO DEL CAMBIO PARA VER QUE SE PUEDEN ASIGNACIONES DE NO PRIMITIVOS
+//														System.out.println("TIPO NO PRIMITIVO SIN SELECTOR con tipoExp:"+asign.getTipoExp().toString()); //****** AQUI
+														// Se comprueba que el tipo de la variable y de la expresión es igual. en caso contrario se lanza una excepción														
+														if (tipo==asign.getTipoExp()){
+														   this.generaCargaDir(objeto);
+														   this.generador.gAIndValor(objeto.getTipo().getSize()); 
+														}
+														else{
+														   throw new ErrorSemanticoException("No coinciden los tipos en la asignación de " +
+																id + " (Línea: "+ idleft + " Columna: " + idright + ")");
+														}
+//****FIN DEL CAMBIO PARA VER QUE SE PUEDEN ASIGNACIONES DE NO PRIMITIVOS
+													    break;
+										/*			default:
+														throw new NoImplementadoException("El tipo de " +
+															id + " no está implementado para ser asignado (Línea: "+
+															idleft + " Columna: " + idright + ")"); */
+												}
+											}catch(ClassCastException e){
+												throw new ErrorSemanticoException("El identificador " +
+													id + " no es de un tipo válido (Línea: "+
+													idleft + " Columna: " + idright + ")");
+											}
+										} // selector == null
+										else{
+											switch(selector.getTipo()){
+												case AnalisisSelector.ARRAY:
+													try{
+														ObjetoTipoTabla tipo = (ObjetoTipoTabla) objeto.getTipo();
+														// Tenemos en la cima de la pila la expresion a asignar (valor)
+														// Posteriormente está el valor del índice
+														// Se puede generar primero la asignación y el intérprete debe guardar el valor asignado para luego poder hacer el control de limitación
+														// Se puede generar primero la limitación con lo que el intérprete debe sacar dos elementos de la pila
+														// Me parece mejor lo primero
+///************************
+
+														switch(this.tabla.compruebaTipo(asign.getTipoExp())){
+															case TablaSimbolos.ENTERA:
+																if (tipo.getTipo()== this.tabla.getInteger()){
+																  // *** Generar la asignación entera
+																  this.generador.gLimitacion(tipo.getInicio(), tipo.getFin(),JMPascalVM.TAMENTERO);
+																  this.generaCargaDirArray(objeto);
+																  this.generador.gAIndValor(JMPascalVM.TAMENTERO);
+																}
+																else  if (tipo.getTipo()==this.tabla.getReal()){
+																		 // *** Generar asignación real con redondeo
+																		 this.generador.gAReal(0);
+																		 this.generador.gLimitacion(tipo.getInicio(), tipo.getFin(),JMPascalVM.TAMREAL);
+																  		 this.generaCargaDirArray(objeto);
+																		 this.generador.gAIndValor(JMPascalVM.TAMREAL);
+																	  }
+																	  else
+																		 throw new ErrorSemanticoException("No coinciden los tipos en la asgnación de " +
+																				id + " (Línea: "+ idleft + " Columna: " + idright + ")");
+																break;
+															case TablaSimbolos.REAL:
+																if (tipo.getTipo()== this.tabla.getReal()){
+																	// *** Generar asignación real
+																	this.generador.gLimitacion(tipo.getInicio(), tipo.getFin(),JMPascalVM.TAMREAL);
+																	this.generaCargaDirArray(objeto);
+																	this.generador.gAIndValor(JMPascalVM.TAMREAL);
+																}
+																else
+																	throw new ErrorSemanticoException("No coinciden los tipos en la asgnación de " +
+																		id + " (Línea: "+ idleft + " Columna: " + idright + ")");
+																break;
+															case TablaSimbolos.LOGICA:
+																if (tipo.getTipo()== this.tabla.getBoolean()/* tipoLogico */){
+																	this.generador.gLimitacion(tipo.getInicio(), tipo.getFin(),JMPascalVM.TAMLOGICA);
+																	this.generaCargaDirArray(objeto);
+																	this.generador.gAIndValor(JMPascalVM.TAMLOGICA); /**** si al final los logicos son reales debe cambiar ***/
+																}
+																else
+																	throw new ErrorSemanticoException("No coinciden los tipos en la asignación de " +
+																		id + " (Línea: "+ idleft + " Columna: " + idright + ")");
+																break;
+															case TablaSimbolos.NOPRIMITVO:
+//																System.out.println("TIPO NO PRIMITIVO"); //******* AQUI
+																// Aqui se da el errror de tipos no compatibles. Si algún día se implementan tipos complejos de tipos complejos habrá que comprobar tipos en este punto.
+																	throw new ErrorSemanticoException("No coinciden los tipos en la asignación de " +
+																		id + " (Línea: "+ idleft + " Columna: " + idright + ")");
+													    		// break; // Con la excepción este código no es leíble
+															
+														}
+//**** Yo dir´ria que esta asignación sobra														this.generador.gAIndValor(JMPascalVM.TAMLOGICA); // Depende del tipo se pondrá de una manera u otra
+													}catch(ClassCastException e){
+														throw new ErrorSemanticoException("El identificador " +
+															id + " no es de un tipo tabla (Línea: "+
+															idleft + " Columna: " + idright + ")");
+													}
+													break;
+												case AnalisisSelector.RECORD:
+													try{
+														// Hay que obtener el tipo no de la variable si no del campo
+														ObjetoTipoRegistro tipo = (ObjetoTipoRegistro) objeto.getTipo();
+														ObjetoCampo campo = tipo.getCampo(selector.getSelector());
+														ObjetoTipoPredefinido tipoCampo = (ObjetoTipoPredefinido) campo.getTipo();
+														
+
+														switch(this.tabla.compruebaTipo(asign.getTipoExp())){
+															case TablaSimbolos.ENTERA:
+																if (tipoCampo==this.tabla.getInteger()){
+																  // *** Generar la asignación entera
+																  this.generaCargaDirRegistro(objeto, campo);
+																  this.generador.gAIndValor(JMPascalVM.TAMENTERO);
+																}
+																else  if (tipoCampo==this.tabla.getReal()){
+																		 this.generador.gAReal(0);
+																		 this.generaCargaDirRegistro(objeto, campo);
+																		 this.generador.gAIndValor(JMPascalVM.TAMREAL);
+																	  }
+																	  else
+																		 throw new ErrorSemanticoException("No coinciden los tipos en la asgnación de " +
+																				id + " (Línea: "+ idleft + " Columna: " + idright + ")");
+																break;
+															case TablaSimbolos.REAL:
+																if (tipoCampo==this.tabla.getReal()){
+																	// *** Generar asignación real
+																	this.generaCargaDirRegistro(objeto, campo);
+																	this.generador.gAIndValor(JMPascalVM.TAMREAL);
+																}
+																else
+																	throw new ErrorSemanticoException("No coinciden los tipos en la asgnación de " +
+																		id + " (Línea: "+ idleft + " Columna: " + idright + ")");
+																break;
+															case TablaSimbolos.LOGICA:
+																if (tipoCampo== this.tabla.getBoolean()){
+																	this.generaCargaDirRegistro(objeto, campo);
+																	this.generador.gAIndValor(JMPascalVM.TAMLOGICA); /**** si al final los logicos son reales debe cambiar ***/
+																}
+																else
+																	throw new ErrorSemanticoException("No coinciden los tipos en la asgnación de " +
+																		id + " (Línea: "+ idleft + " Columna: " + idright + ")");
+																break;
+															case TablaSimbolos.NOPRIMITVO:
+//																System.out.println("TIPO NO PRIMITIVO"); //****** AQUI
+																// Aqui se da el errror de tipos no compatibles. Si algún día se implementan tipos complejos de tipos complejos habrá que comprobar tipos en este punto.
+																throw new ErrorSemanticoException("No coinciden los tipos en la asignación de " +
+																	id + " (Línea: "+ idleft + " Columna: " + idright + ")");															
+															    // break; // Con la excepción este código no es leíble
+
+														}
+													}catch(ClassCastException e){
+														throw new ErrorSemanticoException("El identificador " +
+															id + " no es de un tipo registro (Línea: "+
+															idleft + " Columna: " + idright + ")");
+													}
+													break;
+											}
+										}
+									}
+									
+								}catch(ClassCastException e){
+									throw new ErrorSemanticoException("El identificador \""+
+							               id +"\" no ha sido declarado como variable (Línea: " +
+							               idleft + " columna " + idright + ")");
+								}
+							}
+							else{
+								/* Se trata de una llamada */
+								// System.out.println("Se trata de una llamada");
+								try{
+								   ObjetoProcPredefinido objeto = (ObjetoProcPredefinido) this.tabla.buscarGlobal(id.toLowerCase());
+								   if (objeto == null)
+									   throw new ErrorSemanticoException("El subprograma \""+
+						            	   id +"\" no ha sido declarado (Línea: " + idleft +
+						               	   " columna " + idright + ")");
+								   ArrayList parametros = asign.getParametros();
+								   if (parametros.size() != 1)
+									  throw new ErrorSemanticoException("Error en el número de parámetros "
+						            	  + " (Línea: " + idleft + " columna " + idright + ")");
+								   try{
+								   	  AnalisisExp pasado = (AnalisisExp) parametros.get(0);
+						              ObjetoTipoPredefinido tipo = (ObjetoTipoPredefinido) pasado.getTipo();
+									  ArrayList cola = pasado.getCola();
+								      if (objeto == this.tabla.getWrite()){
+										 for(int j=0; j<cola.size();j++){
+											ArrayList instruccion = (ArrayList) cola.get(j);
+											this.generador.anyadeCodigo((String) instruccion.get(1));
+										 }
+								         if (tipo==this.tabla.getBoolean() || tipo==this.tabla.getInteger())
+								            this.generador.gGrabacion();
+								         else
+								            if (tipo==this.tabla.getReal())
+								               this.generador.gGrabacionReal();
+								            else if (tipo==this.tabla.getString())
+								                    this.generador.gGrabacionLiteral();
+								      }
+								      else{
+										 if (!pasado.getEsVariable())
+										    throw new ErrorSemanticoException("El procedimiento predefinido read no admite expresiones como parámetros "
+						            	       + " (Línea: " + idleft + " columna " + idright + ")");
+										 for(int j=0; j<cola.size();j++){
+											ArrayList instruccion = (ArrayList) cola.get(j);
+											if (((Boolean)instruccion.get(0)).booleanValue())
+											   this.generador.anyadeCodigo((String) instruccion.get(1));
+										 }
+								         if (tipo==this.tabla.getBoolean() || tipo==this.tabla.getInteger())
+								            this.generador.gLectura();
+								         else
+								            if (tipo==this.tabla.getReal())
+								               this.generador.gLecturaReal();
+								      }
+								   }catch(ClassCastException ex){
+									  throw new ErrorSemanticoException("Los procedimineto predefinidos " + 
+									      "write y read sólo admiten "+
+									      "parametros de tipos primitivos (Línea: " + idleft +
+						               	  " columna " + idright + ")");
+						           }
+								}catch(ClassCastException e){
+									try{
+										// Si se añaden la funciones también se puede tratar del identificador de una función
+										ObjetoProc objeto = (ObjetoProc) this.tabla.buscarGlobal(id.toLowerCase());
+										if (objeto == null){
+											throw new ErrorSemanticoException("El subprograma \""+
+								            	id +"\" no ha sido declarado (Línea: " + idleft +
+								               	" columna " + idright + ")");
+										}
+										else{
+											// Lo primero hay que recorrer el arrayList param de asign para comprobar que los tipos corresponden y que las referencias son válidas
+											ArrayList parametros = asign.getParametros();
+											ArrayList listaParametros = objeto.getParametros();
+											if (listaParametros==null){
+											   if (parametros.size()!=0)
+												  throw new ErrorSemanticoException("Error en el número de parámetros de la llamada "
+								            		   + " (Línea: " + idleft + " columna " + idright + ")");
+											   ;
+											}
+											else
+											   if (parametros.size() != listaParametros.size())
+												  throw new ErrorSemanticoException("Error en el número de parámetros de la llamada "
+								            		   + " (Línea: " + idleft + " columna " + idright + ")");
+											for (int i=0;i<parametros.size();i++){
+												ObjetoParametro original = (ObjetoParametro) listaParametros.get(i);
+												AnalisisExp pasado = (AnalisisExp) parametros.get(i);
+												ArrayList cola = pasado.getCola();
+												// System.out.println("La cola es: " + cola.toString());
+												if (original.isReferencia()){
+													// Se comprueba que el parámetro es un identificador de variable (puede ser un campo o simplemente un elemento de un array)
+													// Se copia la dirección en la pila ¿dónde? => Posiblemente ya está copiada
+													if (pasado.getEsVariable()){
+														if (pasado.getTipo() == original.getTipo()){
+															//Se escriben en el generador todo lo necesario de la cola de instrucciones
+															for(int j=0; j<cola.size();j++){
+															    ArrayList instruccion = (ArrayList) cola.get(j);
+	//														    this.generador.anyadeCodigo((String) instruccion.get(1));
+																if (((Boolean)instruccion.get(0)).booleanValue())
+																	this.generador.anyadeCodigo((String) instruccion.get(1));
+															}
+														}
+														else{
+															throw new ErrorSemanticoException("No coincide los tipos de los parámetros "
+											            		+ " (Línea: " + idleft + " columna " + idright + ")");
+														}
+													}
+													else
+														throw new ErrorSemanticoException("Los parámetros por referencia no pueden ser expresiones "
+										            		+ " (Línea: " + idleft + " columna " + idright + ")");
+												}
+												else{
+													// Se comprueba el tipo
+													// se copia el valor de la expresión el la pila :
+													//		* Caso 1: Es una variable carga de valor => Seguramente ya está cargado
+													//		* Caso 2: Es una expresión => Ya está cargada ¿dónde?
+														if (pasado.getTipo() == original.getTipo()){
+															//Se escriben en el generador todo lo necesario de la cola de instrucciones
+															for(int j=0; j<cola.size();j++){
+															   ArrayList instruccion = (ArrayList) cola.get(j);
+															   this.generador.anyadeCodigo((String) instruccion.get(1));
+															}
+														}
+														else{
+															throw new ErrorSemanticoException("No coincide los tipos de los parámetros "
+											            		+ " (Línea: " + idleft + " columna " + idright + ")");
+														}
+												}
+											}	
+											if (objeto.getNivAnidamiento() > 0)
+											   this.generador.gCDirLocal(0); // EE
+											this.generador.gLlamada(objeto.getNumSubpr());
+										}
+									}catch(ClassCastException ex){
+										// Además podrían ser funciones
+										throw new ErrorSemanticoException("El identificador \""+
+							            	id +"\" no ha sido declarado como subprograma (Línea: " + idleft +
+							               	" columna " + idright + ")");
+							        }
+								}
+							}
+						:}
+				  ;
+restoAsign		::= restoNombre:res sASIGNACION expresion:exp
+						{:
+							// restonombre puede ser vacío, un array o un campo
+							// Se realiza la expresión y se genera la asignación quedando pendiente comprobar el tipo asignado
+							RESULT=new AnalisisAsignacion(AnalisisAsignacion.ASIGNACION,res,exp.getTipo());
+						:}
+				  | 	{:
+				  			this.queAnalizo = LLAMADA;
+				  			// System.out.println("queAnalizo: "+ this.queAnalizo);
+				  		:}
+				  	sPARAPER paramLlamada:param sPARCIE
+				  		{:
+							RESULT=new AnalisisAsignacion(AnalisisAsignacion.LLAMADA, param);
+							this.queAnalizo=-1;
+				  		:}
+				  | /* épsilon */ 
+				  		{:
+							RESULT=new AnalisisAsignacion(AnalisisAsignacion.LLAMADA, new ArrayList());
+				  		:}
+				  ;
+paramLlamada	::= paramLlamada:param sCOMA expresion:exp
+						{:
+							param.add(exp);
+							RESULT = param;
+						:}
+				  | expresion:exp
+				  		{:
+				  			RESULT=new ArrayList();
+				  			RESULT.add(exp);
+				  		:}
+				  ;
+
+
+				  
+bucle			::= bucleWHILE
+ 				  | bucleFOR
+ 				  | bucleREPEAT
+				  ;
+bucleWHILE		::= 	{:
+							this.generador.gEtqCondicional(this.tabla.actualizaNumIncondicional());
+						:}
+					prWHILE expresion:exp
+						{:
+							if (exp.getTipo() != this.tabla.getBoolean())
+								throw new ErrorSemanticoException("Las expresiones de las condiciones deben ser de tipo lógico (Línea: " + expleft + " Columna: " + expright + ")");
+							else
+								this.generador.gBifCond(this.tabla.actualizaNumCondicional());
+						:}
+					prDO sentencia
+						{:
+							this.generador.gBifIncond(this.tabla.getNumIncondicionalActual());
+							this.generador.gEtqCondicional(this.tabla.getNumCondicionalActual());
+						:}
+					
+					;
+					
+bucleFOR		::= prFOR pID:id sASIGNACION expresion:exp direccion:dir expresion prDO sentencia ;
+direccion		::= prTO
+/*				  		{:
+				  			RESULT=new String("TO");
+				  		:} */
+				  | prDOWNTO
+/*				  		{:
+				  			RESULT=new String("DOWNTO");
+				  		:} */
+				  ;
+bucleREPEAT		::= prREPEAT 
+						{:
+							this.generador.gEtqCondicional(this.tabla.actualizaNumCondicional());
+						:}
+					sentencias prUNTIL expresion:exp
+						{:
+							if (exp.getTipo() != this.tabla.getBoolean())
+								throw new ErrorSemanticoException("Las expresiones de las condiciones deben ser de tipo lógico (Línea: " + expleft + " Columna: " + expright + ")");
+							else
+								this.generador.gBifCond(this.tabla.getNumCondicionalActual());
+						:}
+					;
+
+expresion		::= expresion:exp1 opRel:op exprSimple:exp2
+						{:
+								RESULT=new AnalisisExp(this.tabla.getBoolean(),false);
+								RESULT.anyadeCola(exp1.getCola());
+								RESULT.anyadeCola(exp2.getCola());
+								if (this.queAnalizo!=LLAMADA){
+									if (exp1.getTipo()!=this.tabla.getReal() && exp2.getTipo()!=this.tabla.getReal()){
+										switch(op.charValue()){
+											case '=':
+												this.generador.gIgual();
+												break;
+											case '<':
+												this.generador.gMenor();
+												break;
+											case '>':
+												this.generador.gMayor();
+												break;
+											case 'M':
+												this.generador.gMayorIgu();
+												break;
+											case 'm':
+												this.generador.gMenorIgu();
+												break;
+											case '!':
+												this.generador.gDistinto();
+												break;
+										}
+									}
+									else{
+										if (exp1.getTipo()==this.tabla.getInteger() || exp1.getTipo()==this.tabla.getBoolean())
+										    this.generador.gAReal(JMPascalVM.TAMREAL);
+										if (exp2.getTipo()==this.tabla.getInteger() || exp2.getTipo()==this.tabla.getBoolean())
+										    this.generador.gAReal(0);
+										switch(op.charValue()){
+											case '=':
+												this.generador.gIgualReal();
+												break;
+											case '<':
+												this.generador.gMenorReal();
+												break;
+											case '>':
+												this.generador.gMayorReal();
+												break;
+											case 'M':
+												this.generador.gMayorIguReal();
+												break;
+											case 'm':
+												this.generador.gMenorIguReal();
+												break;
+											case '!':
+												this.generador.gDistintoReal();
+												break;
+										}
+									}
+								}
+								else{
+									ArrayList cola=new ArrayList(2);
+									cola.add(null);
+									if (exp1.getTipo()!=this.tabla.getReal() && exp2.getTipo()!=this.tabla.getReal()){
+										switch(op.charValue()){
+											case '=':
+											    cola.add("IGUAL");
+												break;
+											case '<':
+											    cola.add("MENOR");
+												break;
+											case '>':
+											    cola.add("MAYOR");
+												break;
+											case 'M':
+											    cola.add("MAYORIGU");
+												break;
+											case 'm':
+											    cola.add("MENOR");
+												break;
+											case '!':
+											    cola.add("MENORIGU");
+												break;
+										}
+										RESULT.encolaInstruccion(cola);
+									}
+									else{
+										if (exp1.getTipo()==this.tabla.getInteger() || exp1.getTipo()==this.tabla.getBoolean())
+										    cola.add("AREAL " + JMPascalVM.TAMREAL);
+										if (exp2.getTipo()==this.tabla.getInteger() || exp2.getTipo()==this.tabla.getBoolean())
+										    cola.add("AREAL 0");
+										RESULT.encolaInstruccion(cola);
+										cola.clear();
+										cola.add(null);
+										switch(op.charValue()){
+											case '=':
+												cola.add("IGUALREAL");
+												break;
+											case '<':
+												cola.add("MENORREAL");
+												break;
+											case '>':
+												cola.add("MAYORREAL");
+												break;
+											case 'M':
+												cola.add("MAYORIGUREAL");
+												break;
+											case 'm':
+												cola.add("MENORIGUREAL");
+												break;
+											case '!':
+												cola.add("DISTINTOREAL");
+												break;
+										}
+										RESULT.encolaInstruccion(cola);
+									}
+								}
+						:}
+				  | exprSimple:exp
+				  		{:
+				  			RESULT = exp;
+				  		:}
+				  ;
+exprSimple		::= exprSimple:exp1 opAdt:op termino:exp2
+						{:
+							if (this.queAnalizo!=LLAMADA){
+								switch (op.charValue()){
+									case '|':
+										if (exp1.getTipo() == this.tabla.getBoolean() && exp2.getTipo() == this.tabla.getBoolean()){
+										   RESULT = new AnalisisExp(this.tabla.getBoolean(),false);
+										   this.generador.gDisyuncion();
+										}
+										else
+											throw new ErrorSemanticoException("No coinciden los tipos (Línea:"
+												+opleft+" Columna: "+opright+")");
+										break;
+									case '+':
+										if (exp1.getTipo() == this.tabla.getBoolean() || exp2.getTipo() == this.tabla.getBoolean())
+											throw new ErrorSemanticoException("No coinciden los tipos (Línea:"
+												+opleft+" Columna: "+opright+")");
+										else if (exp1.getTipo() == this.tabla.getInteger() && exp2.getTipo() == this.tabla.getInteger()){
+												RESULT = new AnalisisExp(this.tabla.getInteger(),false);
+												this.generador.gSuma();
+											 }
+											 else if (exp1.getTipo() == this.tabla.getReal() && exp2.getTipo() == this.tabla.getReal()){
+											  		 RESULT = new AnalisisExp(this.tabla.getReal(),false);
+											  		 this.generador.gSumaReal();
+											  	  }
+										   		  else if (exp1.getTipo() == this.tabla.getInteger()){
+										   		  		   RESULT = new AnalisisExp(this.tabla.getReal(),false);
+														   this.generador.gAReal(JMPascalVM.TAMREAL);
+														   this.generador.gSumaReal();
+											  		   }
+											  		   else if (exp2.getTipo() == this.tabla.getInteger()){
+											  		   		   RESULT = new AnalisisExp(this.tabla.getReal(),false);
+											  		   		   this.generador.gAReal(0);
+													  		   this.generador.gSumaReal();
+												   			}
+										break;
+									case '-':
+										if (exp1.getTipo() == this.tabla.getBoolean() || exp2.getTipo() == this.tabla.getBoolean())
+											throw new ErrorSemanticoException("No coinciden los tipos (Línea:"
+												+opleft+" Columna: "+opright+")");
+										else if (exp1.getTipo() == this.tabla.getInteger() && exp2.getTipo() == this.tabla.getInteger()){
+												RESULT = new AnalisisExp(this.tabla.getInteger(),false);
+												this.generador.gResta();
+											 }
+											 else if (exp1.getTipo() == this.tabla.getReal() && exp2.getTipo() == this.tabla.getReal()){
+											         RESULT = new AnalisisExp(this.tabla.getReal(),false);  
+											  		 this.generador.gRestaReal();
+											  	  }
+										   		  else if (exp1.getTipo() == this.tabla.getInteger()){
+										   		  		   RESULT = new AnalisisExp(this.tabla.getReal(),false);
+														   this.generador.gAReal(JMPascalVM.TAMREAL);
+														   this.generador.gRestaReal();
+											  		   }
+											  		   else if (exp2.getTipo() == this.tabla.getInteger()){
+											  		   		   RESULT = new AnalisisExp(this.tabla.getReal(),false);
+											    	           this.generador.gAReal(0);
+													  		   this.generador.gRestaReal();
+												   			}
+										break;
+								}
+							}
+							else{
+ 							    ArrayList cola = new ArrayList(2);
+ 							    cola.add(null);
+								switch (op.charValue()){
+									case '|':
+										if (exp1.getTipo() == this.tabla.getBoolean() && exp2.getTipo() == this.tabla.getBoolean()){
+										   RESULT = new AnalisisExp(this.tabla.getBoolean(),false);
+										   RESULT.anyadeCola(exp1.getCola());
+										   RESULT.anyadeCola(exp2.getCola());
+										   cola.add("DISYUNCION");
+	 									   RESULT.encolaInstruccion(cola);
+										}
+										else
+											throw new ErrorSemanticoException("No coinciden los tipos (Línea:"
+												+opleft+" Columna: "+opright+")");
+									break;
+									case '+':
+										if (exp1.getTipo() == this.tabla.getBoolean() || exp2.getTipo() == this.tabla.getBoolean())
+											throw new ErrorSemanticoException("No coinciden los tipos (Línea:"
+												+opleft+" Columna: "+opright+")");
+										else if (exp1.getTipo() == this.tabla.getInteger() && exp2.getTipo() == this.tabla.getInteger()){
+												RESULT = new AnalisisExp(this.tabla.getInteger(),false);
+											    RESULT.anyadeCola(exp1.getCola());
+											    RESULT.anyadeCola(exp2.getCola());
+											    cola.add("SUMA");
+											    RESULT.encolaInstruccion(cola);
+											 }
+											 else if (exp1.getTipo() == this.tabla.getReal() && exp2.getTipo() == this.tabla.getReal()){
+											  		 RESULT = new AnalisisExp(this.tabla.getReal(),false);
+										   			 RESULT.anyadeCola(exp1.getCola());
+										   			 RESULT.anyadeCola(exp2.getCola());
+										   			 cola.add("SUMAREAL");
+												     RESULT.encolaInstruccion(cola);
+											  	  }
+										   		  else if (exp1.getTipo() == this.tabla.getInteger()){
+										   		  		   RESULT = new AnalisisExp(this.tabla.getReal(),false);
+														   RESULT.anyadeCola(exp1.getCola());
+														   RESULT.anyadeCola(exp2.getCola());
+														   cola.add("AREAL " + JMPascalVM.TAMREAL);
+													       RESULT.encolaInstruccion(cola);
+														   cola.clear();
+														   cola.add(null);
+													   	   cola.add("SUMAREAL");
+													       RESULT.encolaInstruccion(cola);
+											  		   }
+											  		   else if (exp2.getTipo() == this.tabla.getInteger()){
+											  		   		   RESULT = new AnalisisExp(this.tabla.getReal(),false);
+															   RESULT.anyadeCola(exp1.getCola());
+															   RESULT.anyadeCola(exp2.getCola());
+														   	   cola.add("AREAL 0");
+														       RESULT.encolaInstruccion(cola);
+															   cola.clear();
+															   cola.add(null);
+														   	   cola.add("SUMAREAL");
+														   	   RESULT.encolaInstruccion(cola);
+												   			}
+										break;
+									case '-':
+										if (exp1.getTipo() == this.tabla.getBoolean() || exp2.getTipo() == this.tabla.getBoolean())
+											throw new ErrorSemanticoException("No coinciden los tipos (Línea:"
+												+opleft+" Columna: "+opright+")");
+										else if (exp1.getTipo() == this.tabla.getInteger() && exp2.getTipo() == this.tabla.getInteger()){
+												RESULT = new AnalisisExp(this.tabla.getInteger(),false);
+											    RESULT.anyadeCola(exp1.getCola());
+											    RESULT.anyadeCola(exp2.getCola());
+										   	    cola.add("RESTA");
+										   	    RESULT.encolaInstruccion(cola);
+											 }
+											 else if (exp1.getTipo() == this.tabla.getReal() && exp2.getTipo() == this.tabla.getReal()){
+											         RESULT = new AnalisisExp(this.tabla.getReal(),false);  
+												     RESULT.anyadeCola(exp1.getCola());
+												     RESULT.anyadeCola(exp2.getCola());
+											   	     cola.add("RESTAREAL");
+											   	     RESULT.encolaInstruccion(cola);
+											  	  }
+										   		  else if (exp1.getTipo() == this.tabla.getInteger()){
+										   		  		   RESULT = new AnalisisExp(this.tabla.getReal(),false);
+														   RESULT.anyadeCola(exp1.getCola());
+														   RESULT.anyadeCola(exp2.getCola());
+													   	   cola.add("AREAL "+JMPascalVM.TAMREAL);
+												   	       RESULT.encolaInstruccion(cola);
+													   	   cola.clear();
+													   	   cola.add(null);
+													   	   cola.add("RESTAREAL");
+												   	       RESULT.encolaInstruccion(cola);
+											  		   }
+											  		   else if (exp2.getTipo() == this.tabla.getInteger()){
+											  		   		   RESULT = new AnalisisExp(this.tabla.getReal(),false);
+															   RESULT.anyadeCola(exp1.getCola());
+															   RESULT.anyadeCola(exp2.getCola());
+														   	   cola.add("AREAL 0");
+														   	   RESULT.encolaInstruccion(cola);
+														   	   cola.clear();
+														   	   cola.add(null);
+														   	   cola.add("RESTAREAL");
+														   	   RESULT.encolaInstruccion(cola);
+												   			}
+										break;
+								}
+							}
+						:}
+				  | signo:s termino:exp
+				  		{:
+		  			   			RESULT = exp;
+					  			if (s!=null)
+				  					RESULT.setEsVariable(false);
+				  					if (exp.getTipo() == this.tabla.getBoolean())
+											throw new ErrorSemanticoException("No coinciden los tipos (Línea:"
+											  +sleft+" Columna: "+sright+")");
+									else
+						  				if (this.queAnalizo!=LLAMADA){
+					  			      		this.generador.gNegativo();
+							  			}
+							  			else{
+							  				ArrayList cola = new ArrayList(2);
+							  				cola.add(null);
+							  				cola.add("NEGATIVO");
+									   	    RESULT.encolaInstruccion(cola);
+					  					}
+				  		:}
+				  | termino:exp
+				  		{:
+		  			   			RESULT = exp;
+				  		:}
+				  ;
+				  
+termino 		::= termino:exp1 opMult:op factor:exp2
+						{:
+							if (this.queAnalizo!=LLAMADA){
+								switch (op.charValue()){
+									case '&':
+										if (exp1.getTipo() == this.tabla.getBoolean() && exp2.getTipo() == this.tabla.getBoolean()){
+										   RESULT = new AnalisisExp(this.tabla.getBoolean(),false);
+										   this.generador.gConjuncion();
+										}
+										else
+											throw new ErrorSemanticoException("No coinciden los tipos (Línea:"
+												+opleft+" Columna: "+opright+")");
+										break;
+									case '*':
+										if (exp1.getTipo() == this.tabla.getBoolean() || exp2.getTipo() == this.tabla.getBoolean())
+											throw new ErrorSemanticoException("No coinciden los tipos (Línea:"
+												+opleft+" Columna: "+opright+")");
+										else if (exp1.getTipo() == this.tabla.getInteger() && exp2.getTipo() == this.tabla.getInteger()){
+												RESULT = new AnalisisExp(this.tabla.getInteger(),false);
+												this.generador.gProducto();
+											 }
+											 else if (exp1.getTipo() == this.tabla.getReal() && exp2.getTipo() == this.tabla.getReal()){
+											  		 RESULT = new AnalisisExp(this.tabla.getReal(),false);
+											  		 this.generador.gProductoReal();
+											  	  }
+										   		  else if (exp1.getTipo() == this.tabla.getInteger()){
+										   		  		   RESULT = new AnalisisExp(this.tabla.getReal(),false);
+														   this.generador.gAReal(JMPascalVM.TAMREAL);
+														   this.generador.gProductoReal();
+											  		   }
+											  		   else if (exp2.getTipo() == this.tabla.getInteger()){
+											  		   		   RESULT = new AnalisisExp(this.tabla.getReal(),false);
+											  		   		   this.generador.gAReal(0);
+													  		   this.generador.gProductoReal();
+												   			}
+										break;
+									case '/':
+										if (exp1.getTipo() == this.tabla.getBoolean() || exp2.getTipo() == this.tabla.getBoolean())
+											throw new ErrorSemanticoException("No coinciden los tipos (Línea:"
+												+opleft+" Columna: "+opright+")");
+										else if (exp1.getTipo() == this.tabla.getInteger() && exp2.getTipo() == this.tabla.getInteger()){
+												RESULT = new AnalisisExp(this.tabla.getInteger(),false);
+												this.generador.gDivision();
+											 }
+											 else if (exp1.getTipo() == this.tabla.getReal() && exp2.getTipo() == this.tabla.getReal()){
+											         RESULT = new AnalisisExp(this.tabla.getReal(),false);  
+											  		 this.generador.gDivisionReal();
+											  	  }
+										   		  else if (exp1.getTipo() == this.tabla.getInteger()){
+										   		  		   RESULT = new AnalisisExp(this.tabla.getReal(),false);
+														   this.generador.gAReal(JMPascalVM.TAMREAL);
+														   this.generador.gDivisionReal();
+											  		   }
+											  		   else if (exp2.getTipo() == this.tabla.getInteger()){
+											  		   		   RESULT = new AnalisisExp(this.tabla.getReal(),false);
+											    	           this.generador.gAReal(0);
+													  		   this.generador.gDivisionReal();
+												   			}
+										break;
+									case '%':
+										if (exp1.getTipo() == this.tabla.getBoolean() || exp2.getTipo() == this.tabla.getBoolean())
+											throw new ErrorSemanticoException("No coinciden los tipos (Línea:"
+												+opleft+" Columna: "+opright+")");
+										else if (exp1.getTipo() == this.tabla.getInteger() && exp2.getTipo() == this.tabla.getInteger()){
+												RESULT = new AnalisisExp(this.tabla.getInteger(),false);
+												this.generador.gModulo();
+											 }	
+											 else if (exp1.getTipo() == this.tabla.getReal() && exp2.getTipo() == this.tabla.getReal()){
+											  		 RESULT = new AnalisisExp(this.tabla.getReal(),false);
+											  		 this.generador.gModuloReal();
+											  	  }
+										   		  else if (exp1.getTipo() == this.tabla.getInteger()){
+										   		  		   RESULT = new AnalisisExp(this.tabla.getReal(),false);
+														   this.generador.gAReal(JMPascalVM.TAMREAL);
+														   this.generador.gModuloReal();
+											  		   }
+											  		   else if (exp2.getTipo() == this.tabla.getInteger()){
+											  		   		   RESULT = new AnalisisExp(this.tabla.getReal(),false);
+											    	           this.generador.gAReal(0);
+													  		   this.generador.gModuloReal();
+												   			}
+										break;
+								}
+							}
+							else{
+								ArrayList cola = new ArrayList(2);
+								cola.add(null);
+								switch (op.charValue()){
+									case '&':
+										if (exp1.getTipo() == this.tabla.getBoolean() && exp2.getTipo() == this.tabla.getBoolean()){
+										   RESULT = new AnalisisExp(this.tabla.getBoolean(),false);
+										   RESULT.anyadeCola(exp1.getCola());
+										   RESULT.anyadeCola(exp2.getCola());
+										   cola.add("CONJUNCION");
+									   	   RESULT.encolaInstruccion(cola);
+										}
+										else
+											throw new ErrorSemanticoException("No coinciden los tipos (Línea:"
+												+opleft+" Columna: "+opright+")");
+										break;
+									case '*':
+										if (exp1.getTipo() == this.tabla.getBoolean() || exp2.getTipo() == this.tabla.getBoolean())
+											throw new ErrorSemanticoException("No coinciden los tipos (Línea:"
+												+opleft+" Columna: "+opright+")");
+										else if (exp1.getTipo() == this.tabla.getInteger() && exp2.getTipo() == this.tabla.getInteger()){
+												RESULT = new AnalisisExp(this.tabla.getInteger(),false);
+											    RESULT.anyadeCola(exp1.getCola());
+											    RESULT.anyadeCola(exp2.getCola());
+											    cola.add("PRODUCTO");
+ 										   	    RESULT.encolaInstruccion(cola);
+											 }
+											 else if (exp1.getTipo() == this.tabla.getReal() && exp2.getTipo() == this.tabla.getReal()){
+											  		 RESULT = new AnalisisExp(this.tabla.getReal(),false);
+												     RESULT.anyadeCola(exp1.getCola());
+												     RESULT.anyadeCola(exp2.getCola());
+											   	     cola.add("PRODUCTOREAL");
+											   	     RESULT.encolaInstruccion(cola);
+											   	     
+											  	  }
+										   		  else if (exp1.getTipo() == this.tabla.getInteger()){
+										   		  		   RESULT = new AnalisisExp(this.tabla.getReal(),false);
+														   RESULT.anyadeCola(exp1.getCola());
+														   RESULT.anyadeCola(exp2.getCola());
+													   	   cola.add("AREAL " + JMPascalVM.TAMREAL);
+													   	   RESULT.encolaInstruccion(cola);
+													   	   cola.clear();
+													   	   cola.add(null);
+													   	   cola.add("PRODUCTOREAL");
+													   	   RESULT.encolaInstruccion(cola);
+											  		   }
+											  		   else if (exp2.getTipo() == this.tabla.getInteger()){
+											  		   		   RESULT = new AnalisisExp(this.tabla.getReal(),false);
+															   RESULT.anyadeCola(exp1.getCola());
+															   RESULT.anyadeCola(exp2.getCola());
+														   	   cola.add("AREAL 0");
+														   	   RESULT.encolaInstruccion(cola);
+														   	   cola.clear();
+														   	   cola.add(null);
+														   	   cola.add("PRODUCTOREAL");
+														   	   RESULT.encolaInstruccion(cola);
+												   			}
+										break;
+									case '/':
+										if (exp1.getTipo() == this.tabla.getBoolean() || exp2.getTipo() == this.tabla.getBoolean())
+											throw new ErrorSemanticoException("No coinciden los tipos (Línea:"
+												+opleft+" Columna: "+opright+")");
+										else if (exp1.getTipo() == this.tabla.getInteger() && exp2.getTipo() == this.tabla.getInteger()){
+												RESULT = new AnalisisExp(this.tabla.getInteger(),false);
+											    RESULT.anyadeCola(exp1.getCola());
+											    RESULT.anyadeCola(exp2.getCola());
+										   	    cola.add("DIVISION");
+										   	    RESULT.encolaInstruccion(cola);
+											 }
+											 else if (exp1.getTipo() == this.tabla.getReal() && exp2.getTipo() == this.tabla.getReal()){
+											         RESULT = new AnalisisExp(this.tabla.getReal(),false);  
+												     RESULT.anyadeCola(exp1.getCola());
+												     RESULT.anyadeCola(exp2.getCola());
+											   	     cola.add("DIVISIONREAL");
+											   	     RESULT.encolaInstruccion(cola);
+											  	  }
+										   		  else if (exp1.getTipo() == this.tabla.getInteger()){
+										   		  		   RESULT = new AnalisisExp(this.tabla.getReal(),false);
+														   RESULT.anyadeCola(exp1.getCola());
+														   RESULT.anyadeCola(exp2.getCola());
+												   	       cola.add("AREAL " + JMPascalVM.TAMREAL);
+												   	       RESULT.encolaInstruccion(cola);
+												   	       cola.clear();
+												   	       cola.add(null);
+												   	       cola.add("DIVISIONREAL");
+												   	       RESULT.encolaInstruccion(cola);
+											  		   }
+											  		   else if (exp2.getTipo() == this.tabla.getInteger()){
+											  		   		   RESULT = new AnalisisExp(this.tabla.getReal(),false);
+															   RESULT.anyadeCola(exp1.getCola());
+															   RESULT.anyadeCola(exp2.getCola());
+												   	       	   cola.add("AREAL 0");
+												   	           RESULT.encolaInstruccion(cola);
+												   	           cola.clear();
+												   	           cola.add(null);
+												   	           cola.add("DIVISIONREAL");
+												   	           RESULT.encolaInstruccion(cola);
+												   			}
+										break;
+									case '%':
+										if (exp1.getTipo() == this.tabla.getBoolean() || exp2.getTipo() == this.tabla.getBoolean())
+											throw new ErrorSemanticoException("No coinciden los tipos (Línea:"
+												+opleft+" Columna: "+opright+")");
+										else if (exp1.getTipo() == this.tabla.getInteger() && exp2.getTipo() == this.tabla.getInteger()){
+												RESULT = new AnalisisExp(this.tabla.getInteger(),false);
+											    RESULT.anyadeCola(exp1.getCola());
+											    RESULT.anyadeCola(exp2.getCola());
+											    cola.add("MODULO");
+										   	    RESULT.encolaInstruccion(cola);
+											 }	
+											 else if (exp1.getTipo() == this.tabla.getReal() && exp2.getTipo() == this.tabla.getReal()){
+											  		 RESULT = new AnalisisExp(this.tabla.getReal(),false);
+												     RESULT.anyadeCola(exp1.getCola());
+												     RESULT.anyadeCola(exp2.getCola());
+											   	     cola.add("MODULOREAL");
+											   	     RESULT.encolaInstruccion(cola);
+											  	  }
+										   		  else if (exp1.getTipo() == this.tabla.getInteger()){
+										   		  		   RESULT = new AnalisisExp(this.tabla.getReal(),false);
+													       RESULT.anyadeCola(exp1.getCola());
+													       RESULT.anyadeCola(exp2.getCola());
+												   	       cola.add("AREAL " + JMPascalVM.TAMREAL);
+												   	       RESULT.encolaInstruccion(cola);
+												   	       cola.clear();
+												   	       cola.add(null);
+												   	       cola.add("MODULOREAL");
+												   	       RESULT.encolaInstruccion(cola);
+											  		   }
+											  		   else if (exp2.getTipo() == this.tabla.getInteger()){
+											  		   		   RESULT = new AnalisisExp(this.tabla.getReal(),false);
+														       RESULT.anyadeCola(exp1.getCola());
+														       RESULT.anyadeCola(exp2.getCola());
+													   	       cola.add("AREAL 0");
+													   	       RESULT.encolaInstruccion(cola);
+													   	       cola.clear();
+													   	       cola.add(null);
+													   	       cola.add("MODULOREAL");
+													   	       RESULT.encolaInstruccion(cola);
+												   			}
+										break;
+								}
+							}
+						:}
+				  | factor:exp
+				  		{:
+				  			RESULT = exp;
+				  		:}
+				  ;
+factor			::= pCteEntera:cte
+						{:
+							RESULT = new AnalisisExp(this.tabla.getInteger(),false);
+							if (this.queAnalizo!=LLAMADA)
+								this.generador.gCConstante(cte.intValue());
+							else{
+								ArrayList cola = new ArrayList(2);
+								cola.add(null);
+								cola.add("CCONSTANTE "+cte.intValue());
+					   	        RESULT.encolaInstruccion(cola);
+					   	    }
+						:}
+				  | pCteReal:cte
+				  		{:
+							RESULT = new AnalisisExp(this.tabla.getReal(),false);
+							if (this.queAnalizo!=LLAMADA)
+								this.generador.gCConstanteReal(cte.floatValue());
+							else{
+								ArrayList cola = new ArrayList(2);
+								cola.add(null);
+								cola.add("CCONSTANTEREAL "+cte.floatValue());
+					   	        RESULT.encolaInstruccion(cola);
+					   	    }
+				  		:}
+				  | pID:id restoNombre:sel
+				  		{:
+				  			Object objeto = null;
+				  			if (this.queAnalizo!=LLAMADA){
+					  			if ((objeto = this.tabla.buscarGlobal(id.toLowerCase()))!=null){
+					  				if (sel == null){ // Caso de una variable de tipo simple o constante según el lenguaje ( no se permiten funciones )
+					  					try{
+					  						ObjetoCte constante = (ObjetoCte) objeto;
+											//******hay que hacer el try catch => Aunque las constantes no pueden declararse con otros tipos		
+											try{
+												ObjetoCteEntera cteEntera = (ObjetoCteEntera) constante;
+												RESULT=new AnalisisExp(this.tabla.getInteger(),false);
+												this.generador.gCConstante(cteEntera.getValor()); /**** Comprobar si es esto o carga de valor de una constante */
+			  								}catch(ClassCastException ex){
+												try{
+													ObjetoCteReal cteReal = (ObjetoCteReal) constante;
+													RESULT=new AnalisisExp(this.tabla.getReal(),false);
+													this.generador.gCConstanteReal(cteReal.getValor()); /**** Comprobar si es esto o carga de valor de una constante */
+				  								}catch(ClassCastException ex1){
+													try{
+														ObjetoCteLogica cteLogica = (ObjetoCteLogica) constante;
+														RESULT=new AnalisisExp(this.tabla.getBoolean(),false);
+														this.generador.gCConstante((cteLogica.getValor())?1:0); /**** Comprobar si es esto o carga de valor de una constante */
+					  								}catch(ClassCastException ex2){
+														throw new ErrorSemanticoException("La constante "+
+							  								id + " no es de un tipo valido "+
+							  								" (Línea: " + idleft + " Columna: "+
+					  										idright + ")");
+					  									
+					  								}
+				  								}
+			  								}
+					  					}catch(ClassCastException e){
+					  						try{
+						  						ObjetoVariable variable = (ObjetoVariable) objeto;
+						  						this.generaCargaDir(variable);
+												this.generador.gCIndValor(variable.getTipo().getSize());
+// **** CAMBIO PARA PODER PASAR MATRICES COMO PARÁMETROS
+/*												try{
+													ObjetoTipoPredefinido tipo = (ObjetoTipoPredefinido) variable.getTipo();
+													if (tipo == this.tabla.getInteger()){
+														RESULT=new AnalisisExp(this.tabla.getInteger(),true);
+													}
+													else if (tipo == this.tabla.getReal()){
+															RESULT=new AnalisisExp(this.tabla.getReal(),true);
+														 }
+													 	 else if (tipo == this.tabla.getBoolean()){
+																  RESULT=new AnalisisExp(this.tabla.getBoolean(),true);
+															  }
+												}catch(ClassCastException ex){
+												// ***** AQUI
+//****INICIO DEL CAMBIO PARA VER QUE SE PUEDEN ASIGNACIONES  DE NO PRIMITIVOS
+												    try{
+														RESULT = new AnalisisExp(variable.getTipo(),true);
+//****FIN DEL CAMBIO PARA VER QUE SE PUEDEN ASIGNACIONES  DE NO PRIMITIVOS
+												    }catch (ClassCastException e){
+													   throw new ErrorSemanticoException("Las variable "+
+					  								                id + " no es de un tipo predefinido, falta el selector "+
+					  												" (Línea: " + idleft + " Columna: "+
+					  												idright + ")");
+					  							    }
+												} */
+// **** FIN CAMBIO PARA PODER PASAR MATRICES COMO PARÁMETROS
+												RESULT=new AnalisisExp(variable.getTipo(),true);
+					  						}catch(ClassCastException ex1){
+					  							throw new ErrorSemanticoException("Las expresiones deben"+
+					  								" estar formadas por variables, constantes definidas"+
+					  								" y constantes númericas (Línea: " + idleft + " Columna: "+
+					  								idright + ")");
+						  					}
+					  					}
+					  				}
+					  				else{ // Caso de una variable de tipo registro o array
+					  					/* Puede ser array o registro */
+					  					try{
+						  					ObjetoVariable variable = (ObjetoVariable) objeto;
+						  					switch(sel.getTipo()){
+						  						case AnalisisSelector.ARRAY:
+													try{
+														ObjetoTipoTabla tipo = (ObjetoTipoTabla) variable.getTipo();
+														//**** Creo que aquí habría que generar la carga y la limitacion
+														this.generador.gLimitacion(tipo.getInicio(),tipo.getFin(),0);
+														this.generaCargaDirArray(variable);
+														this.generador.gCIndValor(tipo.getTipo().getSize());
+														if (tipo.getTipo() == this.tabla.getInteger()){
+															RESULT=new AnalisisExp(this.tabla.getInteger(),true);
+														}
+														else if (tipo.getTipo() == this.tabla.getReal()){
+																RESULT=new AnalisisExp(this.tabla.getReal(),true);
+															 }
+															 else if (tipo.getTipo() == this.tabla.getBoolean()){
+																	  RESULT=new AnalisisExp(this.tabla.getBoolean(),true);
+																  }
+						  								break;
+													}catch(ClassCastException e){
+														throw new ErrorSemanticoException("La variable "+
+															id+" no es de tipo array (Línea: "+idleft+" Columna: " +
+																idright + ")");
+													}
+						  						case AnalisisSelector.RECORD:
+													try{
+														ObjetoTipoRegistro registro = (ObjetoTipoRegistro) variable.getTipo();
+														ObjetoCampo campo = null;
+														if ((campo = registro.getCampo(sel.getSelector()))==null)
+															throw new ErrorSemanticoException("El registro "+
+																id+" no contiene ningun campo con el nombre " +
+																sel.getSelector() + " (Línea: "+idleft+" Columna: " +
+																idright + ")");
+														else{ 
+															this.generaCargaDirRegistro(variable,campo);
+															this.generador.gCIndValor(campo.getTipo().getSize());
+															if (campo.getTipo() == this.tabla.getInteger())
+																RESULT=new AnalisisExp(this.tabla.getInteger(),true);
+															else if (campo.getTipo() == this.tabla.getReal())
+																	RESULT=new AnalisisExp(this.tabla.getReal(),true);
+														 		 else if (campo.getTipo() == this.tabla.getBoolean())
+																		  RESULT=new AnalisisExp(this.tabla.getBoolean(),true);
+														}
+						  								break;
+													}catch(ClassCastException e){
+														throw new ErrorSemanticoException("La variable "+
+															id+" no es de tipo registro (Línea: "+idleft+" Columna: " +
+																idright + ")");
+													}
+						  					}
+						  				}catch(ClassCastException e){
+						  					throw new ErrorSemanticoException("El identificador "+id+
+						  						"no se corresponde con una variable (Línea: "+
+						  						idleft+" Columna: "+idright+")");
+						  				}
+					  				}// else => record o array
+					  			} // if existe identificador
+					  			else
+					  				throw new ErrorSemanticoException("El identificador " + 
+					  					id+ " no está declarado (Línea: "+idleft + 
+					  					" Columna: " + idright + ")");
+					  		}
+					  		else{
+					  			ArrayList cola=new ArrayList(2);
+					  			if ((objeto = this.tabla.buscarGlobal(id.toLowerCase()))!=null){
+					  				if (sel == null){ // Caso de una variable de tipo simple o constante según el lenguaje ( no se permiten funciones )
+					  					try{
+					  						ObjetoCte constante = (ObjetoCte) objeto;
+											//******hay que hacer el try catch => Aunque las constantes no pueden declararse con otros tipos		
+											try{
+												ObjetoCteEntera cteEntera = (ObjetoCteEntera) constante;
+												RESULT=new AnalisisExp(this.tabla.getInteger(),false);
+									   	        cola.add(null);
+									   	        cola.add("CCONSTANTE " + cteEntera.getValor());
+									   	        RESULT.encolaInstruccion(cola);
+			  								}catch(ClassCastException ex){
+												try{
+													ObjetoCteReal cteReal = (ObjetoCteReal) constante;
+													RESULT=new AnalisisExp(this.tabla.getReal(),false);
+										   	        cola.add(null);
+										   	        cola.add("CCONSTANTEREAL " + cteReal.getValor());
+										   	        RESULT.encolaInstruccion(cola);
+				  								}catch(ClassCastException ex1){
+													try{
+														ObjetoCteLogica cteLogica = (ObjetoCteLogica) constante;
+														RESULT=new AnalisisExp(this.tabla.getBoolean(),false);
+											   	        cola.add(null);
+											   	        cola.add("CCONSTANTE " + ((cteLogica.getValor())?1:0));
+											   	        RESULT.encolaInstruccion(cola);
+					  								}catch(ClassCastException ex2){
+													    try{
+														   ObjetoCteLiteral cteLiteral = (ObjetoCteLiteral) constante;
+														   RESULT=new AnalisisExp(this.tabla.getString(),false);
+											   	           cola.add(null);
+											   	           cola.add("CLITERAL " + cteLiteral.getValor().length() + " " + cteLiteral.getNumEtiqueta());
+											   	           RESULT.encolaInstruccion(cola);
+					  								    }catch(ClassCastException ex3){
+														   throw new ErrorSemanticoException("La constante "+
+							  								   id + " no es de un tipo valido "+
+							  								   " (Línea: " + idleft + " Columna: "+
+					  										   idright + ")");
+					  								    }
+					  								}
+				  								}
+			  								}
+					  					}catch(ClassCastException e){
+					  						try{
+						  						ObjetoVariable variable = (ObjetoVariable) objeto;
+// ******* CAMBIOS PARA PODER PASAR MATRICES COMO PARÁMETROS
+/*												try{
+													ObjetoTipoPredefinido tipo = (ObjetoTipoPredefinido) variable.getTipo();
+													if (tipo == this.tabla.getInteger()){
+														RESULT=new AnalisisExp(this.tabla.getInteger(),true);
+// *											   	        cola.add(new Boolean(true));
+											   	        cola.add(this.generaCargaDir(variable));
+											   	        RESULT.encolaInstruccion(cola);
+											   	        cola.clear();
+											   	        cola.add(new Boolean(false));
+											   	        cola.add("CINDVALOR "+variable.getTipo().getSize());
+											   	        RESULT.encolaInstruccion(cola); * /
+													}
+													else if (tipo == this.tabla.getReal()){
+															RESULT=new AnalisisExp(this.tabla.getReal(),true);
+// *												   	        cola.add(new Boolean(true));
+												   	        cola.add(this.generaCargaDir(variable));
+												   	        RESULT.encolaInstruccion(cola);
+												   	        cola.clear();
+												   	        cola.add(new Boolean(false));
+												   	        cola.add("CINDVALOR "+variable.getTipo().getSize());
+												   	        RESULT.encolaInstruccion(cola); * /
+														 }
+													 	 else if (tipo == this.tabla.getBoolean()){
+																  RESULT=new AnalisisExp(this.tabla.getBoolean(),true);
+// *													   	          cola.add(new Boolean(true));
+													   	          cola.add(this.generaCargaDir(variable));
+													   	          RESULT.encolaInstruccion(cola);
+													   	          cola.clear();
+													   	          cola.add(new Boolean(false));
+													   	          cola.add("CINDVALOR "+variable.getTipo().getSize());
+													   	          RESULT.encolaInstruccion(cola); * /
+															  } 
+													cola.add(new Boolean(true));
+										   	        cola.add(this.generaCargaDir(variable));
+										   	        RESULT.encolaInstruccion(cola);
+										   	        cola.clear();
+										   	        cola.add(new Boolean(false));
+										   	        cola.add("CINDVALOR "+variable.getTipo().getSize());
+										   	        RESULT.encolaInstruccion(cola);
+												}catch(ClassCastException ex){
+													throw new ErrorSemanticoException("Las variable "+
+					  								id + " no es de un tipo predefinido, falta el selector "+
+					  								" (Línea: " + idleft + " Columna: "+
+					  								idright + ")");
+												} */
+// ******* FIN CAMBIOS PARA PODER PASAR MATRICES COMO PARÁMETROS
+											   RESULT=new AnalisisExp(variable.getTipo(),true);
+											   cola.add(new Boolean(true));
+										   	   cola.add(this.generaCargaDir(variable));
+										   	   RESULT.encolaInstruccion(cola);
+										   	   cola.clear();
+										   	   cola.add(new Boolean(false));
+										   	   cola.add("CINDVALOR "+variable.getTipo().getSize());
+										   	   RESULT.encolaInstruccion(cola);
+					  						}catch(ClassCastException ex1){
+					  							throw new ErrorSemanticoException("Las expresiones deben"+
+					  								" estar formadas por variables, constantes ** definidas"+
+					  								" y constantes númericas (Línea: " + idleft + " Columna: "+
+					  								idright + ")");
+						  					}
+					  					}
+					  				}
+					  				else{ // Caso de una variable de tipo registro o array
+					  					/* Puede ser array o registro */
+					  					try{
+						  					ObjetoVariable variable = (ObjetoVariable) objeto;
+						  					switch(sel.getTipo()){
+						  						case AnalisisSelector.ARRAY:
+													try{
+														ObjetoTipoTabla tipo = (ObjetoTipoTabla) variable.getTipo();
+														//**** Creo que aquí habría que generar la carga y la limitacion
+														// BUSCAR AQUI ****
+														if (tipo.getTipo() == this.tabla.getInteger()){
+															RESULT=new AnalisisExp(this.tabla.getInteger(),true);
+/*												   	        cola.add(new Boolean(true));
+												   	        cola.add("LIMITACION " + tipo.getInicio() + " " + tipo.getFin() + " 0");
+												   	        RESULT.encolaInstruccion(cola);
+												   	        cola.clear();
+												   	        cola.add(new Boolean(true));
+												   	        cola.add(this.generaCargaDirArray(variable));
+												   	        RESULT.encolaInstruccion(cola);
+												   	        cola.clear();
+												   	        cola.add(new Boolean(false));
+												   	        cola.add("CINDVALOR "+variable.getTipo().getSize());
+												   	        RESULT.encolaInstruccion(cola); */
+/*
+															RESULT.encolaInstruccion("LIMITACION " + tipo.getInicio() + " " + tipo.getFin() + " 0");
+															RESULT.encolaInstruccion(this.generaCargaDirArray(variable));
+															RESULT.encolaInstruccion("CINDVALOR " + tipo.getTipo().getSize()); */
+														}
+														else if (tipo.getTipo() == this.tabla.getReal()){
+																RESULT=new AnalisisExp(this.tabla.getReal(),true);
+/*																RESULT.encolaInstruccion("LIMITACION " + tipo.getInicio() + " " + tipo.getFin() + " 0");
+																RESULT.encolaInstruccion(this.generaCargaDirArray(variable));
+																RESULT.encolaInstruccion("CINDVALOR " + tipo.getTipo().getSize()); */
+															 }
+															 else if (tipo.getTipo() == this.tabla.getBoolean()){
+																	  RESULT=new AnalisisExp(this.tabla.getBoolean(),true);
+/*																	  RESULT.encolaInstruccion("LIMITACION " + tipo.getInicio() + " " + tipo.getFin() + " 0");
+																	  RESULT.encolaInstruccion(this.generaCargaDirArray(variable));
+																	  RESULT.encolaInstruccion("CINDVALOR " + tipo.getTipo().getSize()); */
+																  }
+											   	        RESULT.encolaInstruccion(sel.getCola());
+											   	        cola.add(new Boolean(true));
+											   	        cola.add("LIMITACION " + tipo.getInicio() + " " + tipo.getFin() + " 0");
+											   	        RESULT.encolaInstruccion(cola);
+											   	        cola.clear();
+											   	        cola.add(new Boolean(true));
+											   	        cola.add(this.generaCargaDirArray(variable));
+											   	                  // System.out.println("El que no lanza la excepción en 2303");
+											   	        RESULT.encolaInstruccion(cola);
+											   	        cola.clear();
+											   	        cola.add(new Boolean(false));
+											   	        // ******2305
+											   	        // ***** HABría 	que meter el try catch
+											   	        cola.add("CINDVALOR "+((ObjetoTipoTabla)variable.getTipo()).getTipo().getSize());
+											   	        RESULT.encolaInstruccion(cola);
+						  								break;
+													}catch(ClassCastException e){
+														throw new ErrorSemanticoException("La variable "+
+															id+" no es de tipo array (Línea: "+idleft+" Columna: " +
+																idright + ")");
+													}
+						  						case AnalisisSelector.RECORD:
+													try{
+														ObjetoTipoRegistro registro = (ObjetoTipoRegistro) variable.getTipo();
+														ObjetoCampo campo = null;
+														if ((campo = registro.getCampo(sel.getSelector()))==null)
+															throw new ErrorSemanticoException("El registro "+
+																id+" no contiene ningun campo con el nombre " +
+																sel.getSelector() + " (Línea: "+idleft+" Columna: " +
+																idright + ")");
+														else{ 
+															if (campo.getTipo() == this.tabla.getInteger())
+																RESULT=new AnalisisExp(this.tabla.getInteger(),true);
+															else if (campo.getTipo() == this.tabla.getReal())
+																	RESULT=new AnalisisExp(this.tabla.getReal(),true);
+														 		 else if (campo.getTipo() == this.tabla.getBoolean())
+																		  RESULT=new AnalisisExp(this.tabla.getBoolean(),true);
+															cola.add(new Boolean(true));
+															cola.add(this.generaCargaDirRegistro(variable,campo));
+															RESULT.encolaInstruccion(cola);
+															cola.clear();
+															cola.add(new Boolean(false));
+															cola.add("CINDVALOR " + campo.getTipo().getSize());
+															RESULT.encolaInstruccion(cola);
+/*															RESULT.encolaInstruccion(this.generaCargaDirRegistro(variable,campo));
+															RESULT.encolaInstruccion("CINDVALOR " + campo.getTipo().getSize()); */
+														}
+						  								break;
+													}catch(ClassCastException e){
+														throw new ErrorSemanticoException("La variable "+
+															id+" no es de tipo registro (Línea: "+idleft+" Columna: " +
+																idright + ")");
+													}
+						  					}
+						  				}catch(ClassCastException e){
+						  					throw new ErrorSemanticoException("El identificador "+id+
+						  						"no se corresponde con una variable (Línea: "+
+						  						idleft+" Columna: "+idright+")");
+						  				}
+					  				}// else => record o array
+					  			} // if existe identificador
+					  			else
+					  				throw new ErrorSemanticoException("El identificador " + 
+					  					id+ " no está declarado (Línea: "+idleft + 
+					  					" Columna: " + idright + ")");
+					  		}
+				  		:}
+				  | prNOT factor:exp
+				  		{:
+				  			if (exp.getTipo()==this.tabla.getBoolean()){
+				  				exp.setEsVariable(false);
+				  				RESULT = exp;
+				  				if (this.queAnalizo!=LLAMADA)
+				  					this.generador.gNegacion();
+				  				else{
+									ArrayList cola = new ArrayList(2);
+									cola.add(null);
+									cola.add("NEGACION");
+					   	        	RESULT.encolaInstruccion(cola);
+					   	    	}
+				  			}
+				  			else
+				  				throw new ErrorSemanticoException("No coinciden los tipos (Línea "+
+				  					expleft + " Columna: " + expright + ")");
+				  		:}
+				  | sPARAPER expresion:exp sPARCIE
+				  		{:
+				  			// Se permite que una expresión de sólo variable vaya entre paréntesis
+				  			RESULT = exp;
+				  		:}
+				  ;
+opRel			::= sMAYOR
+						{:
+							RESULT = new Character('>');
+						:}
+				  | sMAYORIGU
+						{:
+							RESULT = new Character('M');
+						:}
+				  | sMENOR
+						{:
+							RESULT = new Character('<');
+						:}
+				  | sMENORIGU
+						{:
+							RESULT = new Character('m');
+						:}
+				  | sIGUAL
+						{:
+							RESULT = new Character('=');
+						:}
+				  | sDISTINTO
+						{:
+							RESULT = new Character('!');
+						:}
+				  ;
+opAdt			::= sMAS
+						{:
+							RESULT = new Character('+');
+						:}
+				  | sMENOS
+						{:
+							RESULT = new Character('-');
+						:}
+				  | prOR
+						{:
+							RESULT = new Character('|');
+						:}
+				  ;
+opMult			::= sPOR
+						{:
+							RESULT = new Character('*');
+						:}
+				  | prMOD
+						{:
+							RESULT = new Character('%');
+						:}
+				  | prDIV
+						{:
+							RESULT = new Character('/');
+						:}
+				  | prAND
+						{:
+							RESULT = new Character('&');
+						:}
+				  ;
+signo			::= sMAS
+						{:
+							RESULT = null;
+						:}
+				  | sMENOS
+						{:
+							RESULT = new Character('-');
+						:}
+				  ;
+				   
+restoNombre		::= selector:sel
+						{:
+							RESULT = sel;
+						:}
+				  | /* épsilon */
+				  		{:
+				  			RESULT = null;
+				  		:}
+				  ;
+selector		::= sCORAPER expresion:exp sCORCIE
+						{:
+							// Aquí se controlan todos los valores para ello hacemos uso del la instrucción JMPascal LIMITACION a b C (INICIO, FIN Y OPERANDOS DELANTE)
+							/* Hay que comprobar que la expresión es entera */
+							if (exp.getTipo()!=this.tabla.getInteger())
+								throw new ErrorSemanticoException("Los índices siempre deben ser expresiones con valor entero (Línea: " + expleft + " Columna: " + expright + ")");
+							RESULT = new AnalisisSelector(AnalisisSelector.ARRAY);
+							if (this.queAnalizo==LLAMADA){
+								ArrayList cola = exp.getCola();
+								String cadena="";
+								for(int j=0; j<cola.size();j++){
+								   ArrayList instruccion = (ArrayList) cola.get(j);
+								   if (j>0)
+								      cadena+=separador;
+								   cadena+=(String) instruccion.get(1);
+// /*Cambio para que los elementos valgan como parámetros */								   this.generador.anyadeCodigo((String) instruccion.get(1));
+								}
+								cola=new ArrayList(2);
+								cola.add(new Boolean(true));
+								cola.add(cadena);
+							    RESULT.anyadeCola(cola);
+							}
+						:}
+				  | sPUNTO pID:id
+				  		{:
+		  					RESULT = new AnalisisSelector(AnalisisSelector.RECORD, id);
+				  		:}
+				  ;

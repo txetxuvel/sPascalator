@@ -1,0 +1,430 @@
+package interprete;
+
+import java_cup.runtime.*;
+import user.Log;
+import java.util.ArrayList;
+
+action code {:
+
+	public JMPascalVM maquina = null; 
+	public Log log= null;
+	public ArrayList tradNumSubpr = null;
+	public ArrayList tradNumCond = null;
+	public ArrayList tradNumLiterales = null; //LITERAL
+	public ArrayList llamadasCond = null;
+	public ArrayList llamadasSubpr = null;
+	public ArrayList llamadasLiterales = null; //LITERAL
+
+//NOLITERAL	public void inicializa (JMPascalVM maquina, Log log, ArrayList llamadasSubpr, ArrayList llamadasCond, ArrayList tradNumSubpr, ArrayList tradNumCond){
+	public void inicializa (JMPascalVM maquina, Log log, ArrayList llamadasSubpr, ArrayList llamadasCond, ArrayList llamadasLiterales, ArrayList tradNumSubpr, ArrayList tradNumCond, ArrayList tradNumLiterales){ //LITERAL
+		this.maquina = maquina;
+		this.log = log;
+		this.tradNumSubpr = tradNumSubpr;
+		this.tradNumCond = tradNumCond;
+		this.tradNumLiterales = tradNumLiterales;
+		this.llamadasSubpr = llamadasSubpr;
+		this.llamadasCond = llamadasCond;
+		this.llamadasLiterales = llamadasLiterales;
+	}
+
+:};
+
+parser code {:
+
+	public JMPascalVM maquina = null; 
+	public Log log= null;
+	public ArrayList tradNumSubpr = null;
+	public ArrayList tradNumCond = null;
+	public ArrayList tradNumLiterales = null; //LITERAL
+	public ArrayList llamadasCond = null;
+	public ArrayList llamadasSubpr = null;
+	public ArrayList llamadasLiterales = null; //LITERAL
+	
+//NOLITERAL	public Parser (JMPascalVM maquina, Log log, ArrayList llamadasSubpr, ArrayList llamadasCond, ArrayList tradNumSubpr, ArrayList tradNumCond){
+	public Parser (JMPascalVM maquina, Log log, ArrayList llamadasSubpr, ArrayList llamadasCond, ArrayList llamadasLiterales, ArrayList tradNumSubpr, ArrayList tradNumCond, ArrayList tradNumLiterales){ //LITERAL
+		this();
+		this.maquina = maquina;
+		this.log = log;
+		this.tradNumSubpr = tradNumSubpr;
+		this.tradNumCond = tradNumCond;
+		this.tradNumLiterales = tradNumLiterales; //LITERAL
+		this.llamadasSubpr = llamadasSubpr;
+		this.llamadasCond = llamadasCond;
+		this.llamadasLiterales = llamadasLiterales; //LITERAL
+	}
+
+	public void syntax_error(Symbol tokenActual){
+//	   System.out.println("syntax");
+       log.anadirLog("\nError sintáctico: <token= "
+                + tokenActual.sym + ", texto=\""
+				+ (String) tokenActual.value + "\"> <fila= "
+				+ tokenActual.left + ", columna= "
+				+ tokenActual.right
+				+ ">........ Intentando recuperarse..... ");
+	}
+
+	public void unrecovered_syntax_error(Symbol tokenActual) throws ErrorSintacticoException{
+//	    System.out.println("syntax_fatal");
+	    String cadena="<token= "
+                + tokenActual.sym + ", texto=\""
+				+ (String) tokenActual.value + "\"> <fila= "
+				+ tokenActual.left + ", columna= "
+				+ tokenActual.right
+				+ ">.... Irrecuperable => Traducción Abortada";
+        throw new ErrorSintacticoException(cadena);
+	}
+	
+	public void report_fatal_error(String msg, Object info) throws ErrorSintacticoException{
+//	    System.out.println("report fatal");
+	    Symbol tokenActual = (Symbol) info;
+	    String cadena="<token= "
+                + tokenActual.sym + ", texto=\""
+				+ (String) tokenActual.value + "\"> <fila= "
+				+ tokenActual.left + ", columna= "
+				+ tokenActual.right
+				+ ">.... Irrecuperable => Traducción Abortada";
+        throw new ErrorSintacticoException(cadena);
+	}
+	
+	public void report_error(String msg, Object info){
+//	   System.out.println("report");
+	   Symbol tokenActual = (Symbol) info;
+       log.anadirLog("\nError sintáctico: <token= "
+                + tokenActual.sym + ", texto=\""
+				+ (String) tokenActual.value + "\"> <fila= "
+				+ tokenActual.left + ", columna= "
+				+ tokenActual.right
+				+ ">........ Intentando recuperarse..... ");
+	}
+
+:};
+
+init with {:
+
+//NOILITERAL	action_obj.inicializa(maquina, log, llamadasSubpr, llamadasCond, tradNumSubpr, tradNumCond);
+	action_obj.inicializa(maquina, log, llamadasSubpr, llamadasCond, llamadasLiterales, tradNumSubpr, tradNumCond, tradNumLiterales); //LITERAL
+	
+:};
+
+terminal prAINDVALOR, prAREAL, prARESFUNC, prBIFCOND, prBIFINCOND,
+	prCCONSTANTE, prCCONSTANTEREAL, prCDIRGLOBAL, prCDIRINTERM, prCLITERAL, prCDIRLOCAL,
+	prCINDVALOR, prCONJUNCION, prCREGISTRO, prDCAMPO, prDEFLITERAL,
+	prDELEMENTO, prDEVOLUCION, prDISTINTO, prDISTINTOREAL,
+	prDIVISION, prDIVISIONREAL,
+	prDISYUNCION, prGRABACION, prGRABACIONLITERAL, prGRABACIONREAL, prIGUAL, prIGUALREAL, prLECTURA, prLECTURAREAL, prLIMITACION,
+	prLLAMADA, prMAYORIGU, prMAYORIGUREAL, prMAYOR, prMAYORREAL,
+	prMENORIGU, prMENORIGUREAL, prMENOR, prMENORREAL,
+	prMODULO, prMODULOREAL, prNEGACION, prNEGATIVO,
+	prOCUPAESP, prPRODUCTO, prPRODUCTOREAL, prRESERVAESP,
+	prRESTA, prRESTAREAL, prSUMA, prSUMAREAL, prTAMFUNCION, prTAMGLOBAL,
+    prTERMINACION, pSeparador ;
+  
+terminal Float pCteReal;
+terminal Integer pCte, pEtqInst, pEtqSubpr;
+terminal String pCADENA;
+
+non terminal program, instruccion, cargaDireccion, cargaElemento, cargaValor, salto;
+
+start with program;
+
+program 		::= program instruccion
+				  | /* nothing */
+				  ;
+				  
+instruccion		::= pEtqInst:etq
+						{:
+							if (!this.tradNumCond.isEmpty() &&(this.tradNumCond.size()>etq.intValue()))
+								if (this.tradNumCond.get(etq.intValue())!=null)
+									throw new compilador.ErrorSemanticoException("Etiqueta Condicional número " + etq.intValue() + " repetida");
+							for(int i=this.tradNumCond.size();i<=etq.intValue();i++){
+						       this.tradNumCond.add(i,null);
+							}
+							this.tradNumCond.set(etq.intValue(),new Integer(this.maquina.getDireccionCarga()));
+						:}
+				  | pEtqSubpr:etq
+						{:
+							if (!this.tradNumSubpr.isEmpty()&&(this.tradNumSubpr.size()>etq.intValue()))
+								if (this.tradNumSubpr.get(etq.intValue())!=null)
+									throw new compilador.ErrorSemanticoException("Etiqueta de Subprograma número " + etq.intValue() + " repetida");
+							for(int i=this.tradNumSubpr.size();i<=etq.intValue();i++){
+							   this.tradNumSubpr.add(i,null);
+							}
+							this.tradNumSubpr.set(etq.intValue(),new Integer(this.maquina.getDireccionCarga()));
+							if (etq.intValue()==0)
+								this.maquina.setDirInicio(this.maquina.getDireccionCarga());
+							
+						:}
+				  | prAINDVALOR pSeparador pCte:cte
+				  		{:
+				  			this.maquina.carga(Sym.prAINDVALOR);
+				  			this.maquina.carga(cte.intValue());
+				  		:}
+				  | prAREAL pSeparador pCte:cte
+				  		{:
+				  			this.maquina.carga(Sym.prAREAL);
+				  			this.maquina.carga(cte.intValue());
+				  		:}
+				  | prARESFUNC pSeparador pCte:cte
+				  | prBIFCOND pSeparador pCte:cte
+				  		{:
+				  			this.maquina.carga(Sym.prBIFCOND);
+				  			this.llamadasCond.add(new Integer (this.maquina.carga(cte.intValue())));
+				  		:}
+				  | prBIFINCOND pSeparador pCte:cte
+				  		{:
+				  			this.maquina.carga(Sym.prBIFINCOND);
+				  			this.llamadasCond.add(new Integer (this.maquina.carga(cte.intValue())));
+				  		:}
+				  | prCCONSTANTE pSeparador pCte:cte
+				  		{:
+				  			this.maquina.carga(Sym.prCCONSTANTE);
+				  			this.maquina.carga(cte.intValue());
+				  		:}
+				  | prCCONSTANTEREAL pSeparador pCteReal:cte
+				  		{:
+				  			this.maquina.carga(Sym.prCCONSTANTEREAL);
+				  			this.maquina.cargaRealCP(cte.floatValue());
+				  		:}
+/*				  | prCDIRGLOBAL pSeparador pCte:cte
+				  | prCDIRINTERM pSeparador pCte:cte pSeparador pCte:cte */
+				  | prCLITERAL pSeparador pCte:cte1 pSeparador pCte:cte2
+				  		{:
+				  			this.maquina.carga(Sym.prCLITERAL);
+				  			this.maquina.carga(cte1.intValue());
+//NOLITERAL				  			this.maquina.carga(cte2.intValue());
+				  			this.llamadasLiterales.add(new Integer (this.maquina.carga(cte2.intValue()))); //LITERAL
+				  		:}
+/*				  | prCDIRLOCAL pSeparador pCte:cte */
+				  | prCINDVALOR pSeparador pCte:cte
+				  		{:
+				  			this.maquina.carga(Sym.prCINDVALOR);
+				  			this.maquina.carga(cte.intValue());
+				  		:}
+				  | prCONJUNCION
+				  		{:
+				  			this.maquina.carga(Sym.prCONJUNCION);
+				  		:}
+				  | prCREGISTRO pSeparador pCte:cte
+				  		{:
+				  			this.maquina.carga(Sym.prCREGISTRO);
+				  			this.maquina.carga(cte.intValue());
+				  		:}
+				  | prDCAMPO pSeparador pCte:cte
+				  		{:
+				  			this.maquina.carga(Sym.prDCAMPO);
+				  			this.maquina.carga(cte.intValue());
+				  		:}
+//NOLITERAL				  | prDEFLITERAL pSeparador pCADENA:cadena
+						  | prDEFLITERAL pSeparador pCte:etq pSeparador pCADENA:cadena /* //LITERAL */
+				  		{:
+//LITERAL
+							if (!this.tradNumLiterales.isEmpty()&&(this.tradNumLiterales.size()>etq.intValue()))
+								if (this.tradNumLiterales.get(etq.intValue())!=null)
+									throw new compilador.ErrorSemanticoException("Literal número " + etq.intValue() + " repetido");
+							for(int i=this.tradNumLiterales.size();i<=etq.intValue();i++){
+							   this.tradNumLiterales.add(i,null);
+							}
+							this.tradNumLiterales.set(etq.intValue(),new Integer(this.maquina.cargaLiteral(cadena)));
+//LITERAL =>La línea siguiente sobra							
+//NOLITERAL				  			this.maquina.cargaLiteral(cadena);
+				  		:}
+/*				  | prDELEMENTO pSeparador pCte:cte pSeparador pCte:cte */
+				  | prDEVOLUCION pSeparador pCte:cte
+				  		{:
+				  			this.maquina.carga(Sym.prDEVOLUCION);
+				  			this.maquina.carga(cte.intValue());
+				  		:}
+				  | prDISTINTO
+				  		{:
+				  			this.maquina.carga(Sym.prDISTINTO);
+				  		:}
+				  | prDISTINTOREAL
+				  		{:
+				  			this.maquina.carga(Sym.prDISTINTOREAL);
+				  		:}
+				  | prDIVISION
+				  		{:
+				  			this.maquina.carga(Sym.prDIVISION);
+				  		:}
+				  | prDIVISIONREAL
+				  		{:
+				  			this.maquina.carga(Sym.prDIVISIONREAL);
+				  		:}
+				  | prDISYUNCION
+				  		{:
+				  			this.maquina.carga(Sym.prDISYUNCION);
+				  		:}
+				  | prGRABACION
+				  		{:
+				  			this.maquina.carga(Sym.prGRABACION);
+				  		:}
+				  | prGRABACIONLITERAL
+				  		{:
+				  			this.maquina.carga(Sym.prGRABACIONLITERAL);
+				  		:}
+				  | prGRABACIONREAL
+				  		{:
+				  			this.maquina.carga(Sym.prGRABACIONREAL);
+				  		:}
+				  | prIGUAL
+				  		{:
+				  			this.maquina.carga(Sym.prIGUAL);
+				  		:}
+				  | prIGUALREAL
+				  		{:
+				  			this.maquina.carga(Sym.prIGUALREAL);
+				  		:}
+				  | prLECTURA
+				  		{:
+				  			this.maquina.carga(Sym.prLECTURA);
+				  		:}
+				  | prLECTURAREAL
+				  		{:
+				  			this.maquina.carga(Sym.prLECTURAREAL);
+				  		:}
+				  | prLLAMADA pSeparador pCte:cte
+				  		{:
+				  			this.maquina.carga(Sym.prLLAMADA);
+				  			this.llamadasSubpr.add(new Integer(this.maquina.carga(cte.intValue())));
+				  		:}
+/*				  | prLIMITACION pSeparador pCte:cte pSeparador pCte:cte pSeparador pCte:cte */
+				  | prMAYORIGU
+				  		{:
+				  			this.maquina.carga(Sym.prMAYORIGU);
+				  		:}
+				  | prMAYORIGUREAL
+				  		{:
+				  			this.maquina.carga(Sym.prMAYORIGUREAL);
+				  		:}
+				  | prMAYOR
+				  		{:
+				  			this.maquina.carga(Sym.prMAYOR);
+				  		:}
+				  | prMAYORREAL
+				  		{:
+				  			this.maquina.carga(Sym.prMAYORREAL);
+				  		:}
+				  | prMENORIGU
+				  		{:
+				  			this.maquina.carga(Sym.prMENORIGU);
+				  		:}
+				  | prMENORIGUREAL
+				  		{:
+				  			this.maquina.carga(Sym.prMENORIGUREAL);
+				  		:}
+				  | prMENOR
+				  		{:
+				  			this.maquina.carga(Sym.prMENOR);
+				  		:}
+				  | prMENORREAL
+				  		{:
+				  			this.maquina.carga(Sym.prMENORREAL);
+				  		:}
+				  | prMODULO
+				  		{:
+				  			this.maquina.carga(Sym.prMODULO);
+				  		:}
+				  | prMODULOREAL
+				  		{:
+				  			this.maquina.carga(Sym.prMODULOREAL);
+				  		:}
+				  | prNEGACION
+				  		{:
+				  			this.maquina.carga(Sym.prNEGACION);
+				  		:}
+				  | prNEGATIVO
+				  		{:
+				  			this.maquina.carga(Sym.prNEGATIVO);
+				  		:}
+				  | prOCUPAESP pSeparador pCte:cte
+				  		{:
+				  			this.maquina.carga(Sym.prOCUPAESP);
+				  			this.maquina.carga(cte.intValue());
+				  		:}
+				  | prPRODUCTO
+				  		{:
+				  			this.maquina.carga(Sym.prPRODUCTO);
+				  		:}
+				  | prPRODUCTOREAL
+				  		{:
+				  			this.maquina.carga(Sym.prPRODUCTOREAL);
+				  		:}
+				  | prRESERVAESP pSeparador pCte:cte
+				  		{:
+				  			this.maquina.carga(Sym.prRESERVAESP);
+				  			this.maquina.carga(cte.intValue());
+				  		:}
+				  | prRESTA
+				  		{:
+				  			this.maquina.carga(Sym.prRESTA);
+				  		:}
+				  | prRESTAREAL
+				  		{:
+				  			this.maquina.carga(Sym.prRESTAREAL);
+				  		:}
+				  | prSUMA
+				  		{:
+				  			this.maquina.carga(Sym.prSUMA);
+				  		:}
+				  | prSUMAREAL
+				  		{:
+				  			this.maquina.carga(Sym.prSUMAREAL);
+				  		:}
+				  | prTAMFUNCION pSeparador pCte:cte
+				  		{:
+				  			this.maquina.setTamFuncion(cte.intValue());
+				  		:}
+				  | prTAMGLOBAL pSeparador pCte:cte
+				  		{:
+				  			this.maquina.setTamGlobal(cte.intValue());
+				  		:}
+				  | prTERMINACION
+				  		{:
+				  			this.maquina.carga(Sym.prTERMINACION);
+				  		:}
+				  | pSeparador
+				  | cargaDireccion
+				  | cargaElemento
+				  ;
+
+cargaElemento	::= prLIMITACION pSeparador pCte:cte1 pSeparador pCte:cte2 pSeparador pCte:cte3
+				  		{:
+				  			this.maquina.carga(Sym.prLIMITACION);
+				  			this.maquina.carga(cte1.intValue());
+				  			this.maquina.carga(cte2.intValue());
+				  			this.maquina.carga(cte3.intValue());
+				  		:}
+				  	salto cargaDireccion salto cargaValor prDELEMENTO pSeparador pCte:cte4 pSeparador pCte:cte5
+				  		{:
+				  			this.maquina.carga(Sym.prDELEMENTO);
+				  			this.maquina.carga(cte4.intValue());
+				  			this.maquina.carga(cte5.intValue());
+				  		:}
+				  ;
+cargaValor		::= prCINDVALOR pSeparador pCte:cte salto
+				  		{:
+				  			this.maquina.carga(Sym.prCINDVALOR);
+				  			this.maquina.carga(cte.intValue());
+				  		:}
+				  | /* epsilon */
+				  ;
+cargaDireccion	::= prCDIRGLOBAL pSeparador pCte:cte
+				  		{:
+				  			this.maquina.carga(Sym.prCDIRGLOBAL);
+				  			this.maquina.carga(cte.intValue());
+				  		:}
+				  | prCDIRINTERM pSeparador pCte:cte1 pSeparador pCte:cte2
+				  		{:
+				  			this.maquina.carga(Sym.prCDIRINTERM);
+				  			this.maquina.carga(cte1.intValue());
+				  			this.maquina.carga(cte2.intValue());
+				  		:}
+				  | prCDIRLOCAL pSeparador pCte:cte
+				  		{:
+				  			this.maquina.carga(Sym.prCDIRLOCAL);
+				  			this.maquina.carga(cte.intValue());
+				  		:}
+				  ;
+salto			::= pSeparador
+				  | /* épsilon */
+				  ;
