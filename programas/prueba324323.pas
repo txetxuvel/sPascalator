@@ -1,7 +1,0 @@
-program prueba;
-
-
-begin
-
-
-end.
