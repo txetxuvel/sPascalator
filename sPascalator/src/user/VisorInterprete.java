@@ -87,8 +87,8 @@ public class VisorInterprete extends JPanel {
 //		this.add(getConsole(), java.awt.BorderLayout.SOUTH);
 		this.add(getConsole(), java.awt.BorderLayout.CENTER);
 		this.add(getViewer(), java.awt.BorderLayout.NORTH);
-		this.setComponentZOrder(console,1);
-		this.setComponentZOrder(viewer,0);
+		//this.setComponentZOrder(console,1);
+		//this.setComponentZOrder(viewer,0);
 		/* this.add(getConsole(), java.awt.BorderLayout.NORTH);
 		this.add(getViewer(), java.awt.BorderLayout.SOUTH); */
 	}

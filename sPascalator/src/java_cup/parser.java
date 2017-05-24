@@ -6,7 +6,7 @@
 
 package java_cup;
 
-import java_cup.runtime.*;
+//import java_cup.runtime.*;
 import java.util.Hashtable;
 
 /** CUP v0.10k generated parser.

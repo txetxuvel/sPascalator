@@ -7,7 +7,7 @@
 package compilador;
 
 import java.io.FileReader;
-import java.io.IOException;
+//import java.io.IOException;
 
 import java_cup.runtime.Scanner;
 import user.Log;

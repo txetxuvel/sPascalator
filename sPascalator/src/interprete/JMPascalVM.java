@@ -12,7 +12,7 @@ import user.Screen;
 import user.VisorInterprete;
 import user.Log;
 
-import utils.PrintfFormat;
+//import utils.PrintfFormat;
 import utils.Semaphore;
 
 /**
