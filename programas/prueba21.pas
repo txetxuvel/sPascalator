@@ -90,7 +90,6 @@ begin
 end;
 
 begin
-   operando1:=2.5;
    menu(opcion);
    while opcion <> OFIN
    DO BEGIN
