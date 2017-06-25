@@ -1,12 +1,16 @@
 # sPascalator
-TFC - Pascal translator and VM in Java (2005-2007)
 
 
-PFC: Traductor de un lenguaje procedural mediante JFlex y Java CUP
+**PFC: Traductor de un lenguaje procedural mediante JFlex y Java CUP**
+
 Alumno: Jesús Velayos Pastrana
+
 Tutor: Jesús López Sánchez
+
 Fecha: Junio 2017
+
 Ingeniería Técnica de Informática de Sistemas - ETSI Sistemas Informáticos - Universidad Politécnica de Madrid
+
 
 **Contenido:**
 
